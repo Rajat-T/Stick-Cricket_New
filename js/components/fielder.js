@@ -14,6 +14,18 @@ class Fielder extends Character {
                 this.x += (ball.pos.x - this.x) * 0.05;
                 this.y += (ball.pos.y - this.y) * 0.05;
                 if (dist < 15 && ball.pos.z < 20 && ball.vel.z < 0) {
+                    this.isCatching = true;
+                    ball.vel.x *= 0.2;
+                    ball.vel.y *= 0.2;
+                    ball.vel.z = 0;
+                    ball.isActive = false;
+                    if (typeof game !== 'undefined') {
+                        if (typeof game.handleWicket === 'function' && game.gameState === 'playing') {
+                            game.handleWicket('Caught!', 0);
+                        } else if (typeof game.showFeedback === 'function') {
+                            game.showFeedback('Catch!', '#FF4136');
+                        }
+                    }
                 }
             }
         } else {
