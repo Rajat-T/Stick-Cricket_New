@@ -90,24 +90,29 @@ class Ball {
         if (shotType === "straight") angle = Math.PI * 1.5 + (Math.random() - 0.5) * 0.18;
         else if (shotType === "defensive") angle = Math.PI * 1.5 + (Math.random() - 0.5) * 0.08;
         else angle = (swingDirection === "left" ? Math.PI * 1.25 : Math.PI * 1.75) + (Math.random() - 0.5) * 0.35;
-        const incoming = Math.hypot(this.vel.x, this.vel.y);
-        const batBase = 380 * power;
-        const exitSpeed = batBase + Math.max(0, 0.25 * incoming * (timingScore / 3));
-        this.vel.x = Math.cos(angle) * exitSpeed;
-        this.vel.y = Math.sin(angle) * exitSpeed;
+        const incomingVec = { x: this.vel.x, y: this.vel.y, z: this.vel.z };
+        const batSpeed = 380 * power;
+        const batVel = {
+            x: Math.cos(angle) * batSpeed,
+            y: Math.sin(angle) * batSpeed
+        };
         const loftBase = 62 * power * (shotType === "defensive" ? 0.4 : 1);
-        this.vel.z = loftBase + Math.max(0, -0.15 * this.vel.y);
+        batVel.z = loftBase + Math.max(0, -0.15 * batVel.y);
+        const e = 0.55;
+        this.vel.x = (1 + e) * batVel.x - e * incomingVec.x;
+        this.vel.y = (1 + e) * batVel.y - e * incomingVec.y;
+        this.vel.z = Math.max(0, (1 + e) * batVel.z - e * incomingVec.z);
         let runs = 0;
-        const hitMag = Math.hypot(this.vel.x, this.vel.y);
+        const postSpeed = Math.hypot(this.vel.x, this.vel.y);
         if (shotType === "defensive") {
             runs = 0;
-        } else if (hitMag > 470 && timingScore > 1) {
+        } else if (postSpeed > 470 && timingScore > 1) {
             runs = 6;
-        } else if (hitMag > 360 && timingScore > 1) {
+        } else if (postSpeed > 360 && timingScore > 1) {
             runs = 4;
-        } else if (hitMag > 220) {
+        } else if (postSpeed > 220) {
             runs = (Math.random() < 0.65) ? 2 : 1;
-        } else if (hitMag > 140) {
+        } else if (postSpeed > 140) {
             runs = 1;
         } else {
             runs = 0;
