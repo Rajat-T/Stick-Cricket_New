@@ -4,7 +4,7 @@ class Ball {
         this.difficulty = difficulty;
         this.onMiss = onMiss;
         this.G = 980 * 0.10;
-        this.AIR_DRAG = 0.12;
+        this.dragCoeff = this.difficulty?.dragCoeff ?? 0.12;
         this.BOUNCE_FAST = 0.45;
         this.BOUNCE_MED = 0.52;
         this.BOUNCE_SPIN = 0.58;
@@ -128,6 +128,13 @@ class Ball {
             this.swingAccel *= decay;
             this.vel.x += this.swingAccel * dt;
             this.vel.z -= this.G * dt;
+            const speed = Math.hypot(this.vel.x, this.vel.y, this.vel.z);
+            if (speed > 0) {
+                const drag = this.dragCoeff * speed;
+                this.vel.x -= drag * (this.vel.x / speed) * dt;
+                this.vel.y -= drag * (this.vel.y / speed) * dt;
+                this.vel.z -= drag * (this.vel.z / speed) * dt;
+            }
             this.pos.x += this.vel.x * dt;
             this.pos.y += this.vel.y * dt;
             this.pos.z += this.vel.z * dt;
@@ -149,8 +156,13 @@ class Ball {
             }
         } else {
             this.vel.z -= this.G * dt;
-            this.vel.x -= this.AIR_DRAG * this.vel.x * dt;
-            this.vel.y -= this.AIR_DRAG * this.vel.y * dt;
+            const speed = Math.hypot(this.vel.x, this.vel.y, this.vel.z);
+            if (speed > 0) {
+                const drag = this.dragCoeff * speed;
+                this.vel.x -= drag * (this.vel.x / speed) * dt;
+                this.vel.y -= drag * (this.vel.y / speed) * dt;
+                this.vel.z -= drag * (this.vel.z / speed) * dt;
+            }
             this.pos.x += this.vel.x * dt;
             this.pos.y += this.vel.y * dt;
             this.pos.z += this.vel.z * dt;
