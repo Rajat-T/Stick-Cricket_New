@@ -111,7 +111,8 @@ class Game {
         let g = (num & 0x0000FF) + amount;
         if (g > 255) g = 255;
         else if (g < 0) g = 0;
-        return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
+        const combined = g | (b << 8) | (r << 16);
+        return (usePound ? "#" : "") + combined.toString(16).padStart(6, '0');
     }
     selectTeam(team, element) {
         const allCards = document.querySelectorAll('.team-card');
