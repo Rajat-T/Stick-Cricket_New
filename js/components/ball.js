@@ -21,7 +21,8 @@ class Ball {
         this.type = "medium";
         this.pos = { x: 0, y: 0, z: 18 };
         this.vel = { x: 0, y: 0, z: 0 };
-        this.swingAccel = 0;
+        this.swingCoeff = 0;
+        this.spinRate = 0;
         this.swingSign = 1;
         this.trail = [];
     }
@@ -53,10 +54,10 @@ class Ball {
         this.vel.z = (0.5 * this.G * tToPitch - this.pos.z / tToPitch);
         this.swingSign = (Math.random() < 0.5 ? -1 : 1) * (side === 'off' ? -1 : 1);
         const swingScale = (this.difficulty?.swing ?? 60) / 100;
-        const baseSwing = this.SWING_BASE * swingScale;
-        if (type === 'fast') this.swingAccel = baseSwing * 0.9 * this.swingSign;
-        else if (type === 'medium') this.swingAccel = baseSwing * 1.0 * this.swingSign;
-        else this.swingAccel = baseSwing * 1.2 * this.swingSign;
+        this.swingCoeff = this.SWING_BASE * swingScale;
+        if (type === 'fast') this.spinRate = 1.0;
+        else if (type === 'medium') this.spinRate = 0.8;
+        else this.spinRate = 0.5;
         this.hasBounced = false;
     }
     isHittable() {
@@ -130,8 +131,9 @@ class Ball {
         if (this.trail.length > 12) this.trail.shift();
         if (!this.isHit) {
             const decay = Math.exp(-this.SWING_DECAY * dt);
-            this.swingAccel *= decay;
-            this.vel.x += this.swingAccel * dt;
+            this.spinRate *= decay;
+            const swingForce = this.swingCoeff * this.spinRate * this.vel.y * this.vel.y * this.swingSign;
+            this.vel.x += swingForce * dt;
             this.vel.z -= this.G * dt;
             const speed = Math.hypot(this.vel.x, this.vel.y, this.vel.z);
             if (speed > 0) {
@@ -164,8 +166,8 @@ class Ball {
                     this.vel.x = vx * fricScale;
                     this.vel.y = vy * fricScale;
                 }
-                this.swingAccel += this.vel.x * 0.02;
-                if (this.type === "spin") this.swingAccel *= this.SPIN_AFTER_BOUNCE;
+                this.spinRate += Math.abs(this.vel.x) * 0.02;
+                if (this.type === "spin") this.spinRate *= this.SPIN_AFTER_BOUNCE;
                 this.hasBounced = true;
             }
             if (this.pos.y > this.ctx.canvas.height + 10) {
@@ -203,7 +205,7 @@ class Ball {
                     this.vel.x = vx * fricScale;
                     this.vel.y = vy * fricScale;
                 }
-                this.swingAccel += this.vel.x * 0.02;
+                this.spinRate += Math.abs(this.vel.x) * 0.02;
             }
             const W = this.ctx.canvas.width, H = this.ctx.canvas.height;
             if (this.pos.y < -20 || this.pos.x < -20 || this.pos.x > W + 20 || this.pos.z < -12) {
