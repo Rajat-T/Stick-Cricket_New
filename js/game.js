@@ -705,11 +705,17 @@ class Game {
         this.strikeRateEl.textContent = this.balls > 0 ? (this.score / this.balls * 100).toFixed(2) : '0.00';
         this.foursEl.textContent = this.fours;
         this.sixesEl.textContent = this.sixes;
-        const teamColour = this.userTeam?.primaryColor || '#FFD700';
-        this.scoreEl.style.color = teamColour;
-        this.wicketsEl.style.color = teamColour;
-        this.oversEl.style.color = teamColour;
+
+        // Add animation class and remove it after animation ends
+        const elementsToAnimate = [this.scoreEl, this.wicketsEl, this.oversEl, this.foursEl, this.sixesEl, this.strikeRateEl];
+        elementsToAnimate.forEach(el => {
+            el.classList.add('score-update');
+            el.addEventListener('animationend', () => {
+                el.classList.remove('score-update');
+            }, { once: true });
+        });
     }
+
     showFeedback(text, color) {
         this.feedbackText.textContent = text;
         this.feedbackText.style.color = color;
