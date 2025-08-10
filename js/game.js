@@ -389,12 +389,13 @@ class Game {
         if (this.fielders) this.fielders.forEach(f => f.draw());
     }
     gameLoop(timestamp) {
-        if (this.gameLoopPaused) {
-            if ((this.gameState === 'playing' || this.gameState === 'between_balls') &&
-                !this.ball.isActive && !this.awaitingNextBall && !this.isGameOver()) {
-                this.awaitingNextBall = true;
-                setTimeout(() => this.nextBall(), 1200);
-            }
+        if ((this.gameState === 'playing' || this.gameState === 'between_balls') &&
+            !this.ball.isActive && !this.awaitingNextBall && !this.isGameOver() && !this.gameLoopPaused) {
+            this.awaitingNextBall = true;
+            setTimeout(() => this.nextBall(), 1200);
+        }
+        
+        if (this.gameLoopPaused && this.gameState !== 'between_balls') {
             requestAnimationFrame(t => this.gameLoop(t));
             return;
         }
@@ -504,8 +505,6 @@ class Game {
                 }
                 if (result.runs === 0) {
                     this.showFeedback('DOT BALL', '#FFFFFF');
-                    this.ball.isActive = false;
-                    this.awaitingNextBall = true; setTimeout(() => this.nextBall(), 1500);
                 } else {
                     this.playSound('cheer', 1, 0.2);
                     if (result.runs >= 4) {
@@ -516,8 +515,15 @@ class Game {
                         }
                     }
                     this.createParticles(this.ball.pos.x, 50, 8, '#ffffff');
-                    this.awaitingNextBall = true; setTimeout(() => this.nextBall(), 2000);
                 }
+                this.ball.isActive = false;
+                this.gameState = 'between_balls';
+                this.awaitingNextBall = true;
+                setTimeout(() => {
+                    if (this.gameState === 'between_balls') {
+                        this.nextBall();
+                    }
+                }, result.runs === 0 ? 1500 : 2000);
             }
         }
     }
@@ -546,11 +552,14 @@ class Game {
         this.incrementBall();
         this.updateScoreboard();
         this.showFeedback(`0 · ${type}`, '#FF4136');
+        this.ball.isActive = false;
         this.gameState = 'between_balls';
         if (this.isGameOver()) {
             setTimeout(() => this.endGame(), 2000);
         } else {
-            this.awaitingNextBall = true; setTimeout(() => this.nextBall(), 2000);
+            this.awaitingNextBall = true;
+            this.gameLoopPaused = false;
+            setTimeout(() => this.nextBall(), 2000);
         }
     }
     updateBatsmanStats(eventType, value, runsScored = 0) {
@@ -632,10 +641,12 @@ class Game {
     }
     nextBall() {
         this.awaitingNextBall = false;
+        this.gameLoopPaused = false;
         if (this.isGameOver()) {
             this.endGame();
             return;
         }
+        this.ball.isActive = false;
         this.gameState = 'playing';
         this.wicketsObject.reset();
         this.bowler.startDelivery();

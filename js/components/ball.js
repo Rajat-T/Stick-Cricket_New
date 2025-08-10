@@ -4,7 +4,7 @@ class Ball {
         this.difficulty = difficulty;
         this.onMiss = onMiss;
         this.G = 980 * 0.10;
-        this.dragCoeff = this.difficulty?.dragCoeff ?? 0.12;
+        this.AIR_DRAG = 0.12;
         this.BOUNCE_FAST = 0.45;
         this.BOUNCE_MED = 0.52;
         this.BOUNCE_SPIN = 0.58;
@@ -21,8 +21,7 @@ class Ball {
         this.type = "medium";
         this.pos = { x: 0, y: 0, z: 18 };
         this.vel = { x: 0, y: 0, z: 0 };
-        this.swingCoeff = 0;
-        this.spinRate = 0;
+        this.swingAccel = 0;
         this.swingSign = 1;
         this.trail = [];
     }
@@ -54,10 +53,10 @@ class Ball {
         this.vel.z = (0.5 * this.G * tToPitch - this.pos.z / tToPitch);
         this.swingSign = (Math.random() < 0.5 ? -1 : 1) * (side === 'off' ? -1 : 1);
         const swingScale = (this.difficulty?.swing ?? 60) / 100;
-        this.swingCoeff = this.SWING_BASE * swingScale;
-        if (type === 'fast') this.spinRate = 1.0;
-        else if (type === 'medium') this.spinRate = 0.8;
-        else this.spinRate = 0.5;
+        const baseSwing = this.SWING_BASE * swingScale;
+        if (type === 'fast') this.swingAccel = baseSwing * 0.9 * this.swingSign;
+        else if (type === 'medium') this.swingAccel = baseSwing * 1.0 * this.swingSign;
+        else this.swingAccel = baseSwing * 1.2 * this.swingSign;
         this.hasBounced = false;
     }
     isHittable() {
@@ -131,17 +130,9 @@ class Ball {
         if (this.trail.length > 12) this.trail.shift();
         if (!this.isHit) {
             const decay = Math.exp(-this.SWING_DECAY * dt);
-            this.spinRate *= decay;
-            const swingForce = this.swingCoeff * this.spinRate * this.vel.y * this.vel.y * this.swingSign;
-            this.vel.x += swingForce * dt;
+            this.swingAccel *= decay;
+            this.vel.x += this.swingAccel * dt;
             this.vel.z -= this.G * dt;
-            const speed = Math.hypot(this.vel.x, this.vel.y, this.vel.z);
-            if (speed > 0) {
-                const drag = this.dragCoeff * speed;
-                this.vel.x -= drag * (this.vel.x / speed) * dt;
-                this.vel.y -= drag * (this.vel.y / speed) * dt;
-                this.vel.z -= drag * (this.vel.z / speed) * dt;
-            }
             this.pos.x += this.vel.x * dt;
             this.pos.y += this.vel.y * dt;
             this.pos.z += this.vel.z * dt;
