@@ -514,6 +514,7 @@ class Game {
                             setTimeout(() => this.wrapper.style.animation = '', 500);
                         }
                     }
+                    this.createParticles(this.ball.pos.x, 50, 8, '#ffffff');
                     this.awaitingNextBall = true; setTimeout(() => this.nextBall(), 2000);
                 }
             }
@@ -537,6 +538,7 @@ class Game {
     }
     handleWicket(type, runsScoredOnWicket) {
         this.playSound('wicket', 1, 0.6);
+        this.playSound('cheer', 0.8, 0.3);
         this.wicketsTaken++;
         this.updateBatsmanStats('wicket', type, runsScoredOnWicket);
         this.recordBallOutcome('W');
@@ -600,6 +602,8 @@ class Game {
             this.currentOver = [];
             this.updateOverTracker();
             this.selectBowler();
+            const lastBall = this.currentOver[this.currentOver.length - 1] || '·';
+            this.showFeedback(`Over complete – last ball: ${lastBall}`, '#FFD700');
         }
     }
     updateOverTracker() {
@@ -701,6 +705,10 @@ class Game {
         this.strikeRateEl.textContent = this.balls > 0 ? (this.score / this.balls * 100).toFixed(2) : '0.00';
         this.foursEl.textContent = this.fours;
         this.sixesEl.textContent = this.sixes;
+        const teamColour = this.userTeam?.primaryColor || '#FFD700';
+        this.scoreEl.style.color = teamColour;
+        this.wicketsEl.style.color = teamColour;
+        this.oversEl.style.color = teamColour;
     }
     showFeedback(text, color) {
         this.feedbackText.textContent = text;
