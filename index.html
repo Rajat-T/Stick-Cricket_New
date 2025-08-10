@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Stick Cricket - IPL Edition</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="game-title">
+        <h1>ULTIMATE STICK CRICKET - IPL EDITION</h1>
+        <p>Experience the thrill of IPL cricket with real teams and players!</p>
+    </div>
+    <div class="game-wrapper" id="gameWrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui-overlay">
+            <div id="scoreboard">
+                <div class="score-item">SCORE: <span id="score">0</span></div>
+                <div class="score-item">OVERS: <span id="overs">0.0</span></div>
+                <div class="score-item">WICKETS: <span id="wickets">0</span></div>
+                <div class="score-item">4s: <span id="fours">0</span></div>
+                <div class="score-item">6s: <span id="sixes">0</span></div>
+                <div class="score-item">S/R: <span id="strikeRate">0.00</span></div>
+                <div id="bowlerInfo">Bowler: <span id="bowlerName">-</span> (<span id="bowlerTeam"
+                        class="bowler-team">-</span>)</div>
+            </div>
+            <div id="overTracker">
+                <h4>CURRENT OVER</h4>
+                <div class="over-balls" id="overBalls"></div>
+            </div>
+            <button id="scorecardBtn" style="display:none; right:15px; top:120px;">Scorecard</button>
+            <div id="feedbackText"></div>
+            <div id="gameMenu">
+                <h1>ULTIMATE STICK CRICKET</h1>
+                <p>Use LEFT/RIGHT arrow keys to smash the ball. Timing is everything. Can you become a legend?</p>
+                <div class="difficulty-select">
+                    <label for="difficulty">Difficulty:</label>
+                    <select id="difficulty">
+                        <option value="amateur">Amateur</option>
+                        <option value="pro">Professional</option>
+                        <option value="legend">Legend</option>
+                    </select>
+                </div>
+                <button class="menu-btn" id="quickPlayBtn">Quick Play (5 Overs)</button>
+                <button class="menu-btn" id="tournamentBtn">Tournament (10 Wickets)</button>
+                <button class="menu-btn" id="survivalBtn">Survival Mode</button>
+                <button class="menu-btn" id="challengeBtn">Challenge (Target: 50)</button>
+                <button class="menu-btn" id="runChaseBtn">Run Chase (10 Overs)</button>
+                <div id="highScore">High Score: <span id="highScoreValue">0</span></div>
+                <div class="controls-info">
+                    <h3>Controls</h3>
+                    <p><span class="key">←</span> Leg-side shots <span class="key">→</span> Off-side shots</p>
+                    <p><span class="key">↑</span> Straight drive <span class="key">↓</span> Defensive shot</p>
+                </div>
+            </div>
+            <div id="teamSelection">
+                <h2>Select Your IPL Team</h2>
+                <div class="teams-container" id="teamsContainer"></div>
+            </div>
+            <div id="teamDisplay">
+                <h2>Team Lineups</h2>
+                <div class="teams-lineup">
+                    <div class="team-lineup">
+                        <h3 id="userTeamName">Your Team</h3>
+                        <ul class="player-list" id="userTeamPlayers"></ul>
+                    </div>
+                    <div class="team-lineup">
+                        <h3 id="oppositionTeamName">Opposition</h3>
+                        <ul class="player-list" id="oppositionTeamPlayers"></ul>
+                    </div>
+                </div>
+                <button id="startGameBtn">Start Match</button>
+            </div>
+            <div id="scorecardDisplay">
+                <h2>Match Scorecard</h2>
+                <div id="scorecardContent">
+                    <table id="scorecardTable">
+                        <thead>
+                            <tr>
+                                <th>Batsman</th>
+                                <th>Bowler</th>
+                                <th>How Out</th>
+                                <th>Runs</th>
+                                <th>Balls</th>
+                                <th>4s</th>
+                                <th>6s</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scorecardBody">
+                        </tbody>
+                    </table>
+                </div>
+                <button id="backToGameBtn">Back to Game</button>
+            </div>
+        </div>
+    </div>
+    <div class="instructions">
+        <h2>How To Play</h2>
+        <p>Time your shots perfectly when the ball is in the hitting zone. Different shots produce different results!
+        </p>
+        <div class="instructions-grid">
+            <div class="instruction-card">
+                <h3>Timing Matters</h3>
+                <p>Press the shot key when the ball is close to the batsman. Perfect timing results in boundaries!</p>
+            </div>
+            <div class="instruction-card">
+                <h3>Shot Selection</h3>
+                <p>Choose the right shot based on ball direction. Leg-side for balls on the left, off-side for right.
+                </p>
+            </div>
+            <div class="instruction-card">
+                <h3>Game Modes</h3>
+                <p>Quick Play, Tournament, Survival, and Challenge modes offer different cricket experiences.</p>
+            </div>
+            <div class="instruction-card">
+                <h3>IPL Teams</h3>
+                <p>Select your favorite IPL team and compete against a randomly selected opponent!</p>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <p>© 2023 Ultimate Stick Cricket | Created with HTML5 Canvas | Best experienced on desktop</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/teams.js"></script>
+    <script src="js/components/stadium.js"></script>
+    <script src="js/components/ball.js"></script>
+    <script src="js/components/character.js"></script>
+    <script src="js/components/wickets.js"></script>
+    <script src="js/components/batsman.js"></script>
+    <script src="js/components/bowler.js"></script>
+    <script src="js/components/fielder.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
