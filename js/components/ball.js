@@ -132,14 +132,27 @@ class Ball {
             this.pos.y += this.vel.y * dt;
             this.pos.z += this.vel.z * dt;
             if (this.pos.z <= 0 && this.vel.z < 0) {
+                const vx = this.vel.x, vy = this.vel.y, vz = this.vel.z;
+                const horizSpeed = Math.hypot(vx, vy);
+                const speed = Math.hypot(horizSpeed, vz);
+                const angle = Math.atan2(-vz, horizSpeed);
                 this.pos.z = 0;
                 let e = this.BOUNCE_MED;
                 if (this.type === "fast") e = this.BOUNCE_FAST;
                 else if (this.type === "spin") e = this.BOUNCE_SPIN;
-                this.vel.z *= -e;
-                this.vel.x *= (1 - this.GROUND_FRICTION);
-                this.vel.y *= (1 - this.GROUND_FRICTION * 0.6);
-                this.vel.x += (Math.random() - 0.5) * 20;
+                const angleFactor = 1 - 0.3 * (angle / (Math.PI / 2));
+                const speedFactor = 1 - Math.min(speed / 600, 1) * 0.25;
+                e *= angleFactor * speedFactor;
+                e = Math.max(0, Math.min(e, 0.9));
+                const normalVel = -vz;
+                const frictionImpulse = this.GROUND_FRICTION * normalVel;
+                this.vel.z = normalVel * e;
+                if (horizSpeed > 0) {
+                    const fricScale = Math.max(horizSpeed - frictionImpulse, 0) / horizSpeed;
+                    this.vel.x = vx * fricScale;
+                    this.vel.y = vy * fricScale;
+                }
+                this.swingAccel += this.vel.x * 0.02;
                 if (this.type === "spin") this.swingAccel *= this.SPIN_AFTER_BOUNCE;
                 this.hasBounced = true;
             }
@@ -155,10 +168,25 @@ class Ball {
             this.pos.y += this.vel.y * dt;
             this.pos.z += this.vel.z * dt;
             if (this.pos.z <= 0 && this.vel.z < 0) {
+                const vx = this.vel.x, vy = this.vel.y, vz = this.vel.z;
+                const horizSpeed = Math.hypot(vx, vy);
+                const speed = Math.hypot(horizSpeed, vz);
+                const angle = Math.atan2(-vz, horizSpeed);
                 this.pos.z = 0;
-                this.vel.z *= -0.55;
-                this.vel.x *= (1 - this.GROUND_FRICTION * 0.8);
-                this.vel.y *= (1 - this.GROUND_FRICTION * 0.8);
+                let e = 0.55;
+                const angleFactor = 1 - 0.3 * (angle / (Math.PI / 2));
+                const speedFactor = 1 - Math.min(speed / 600, 1) * 0.25;
+                e *= angleFactor * speedFactor;
+                e = Math.max(0, Math.min(e, 0.9));
+                const normalVel = -vz;
+                const frictionImpulse = this.GROUND_FRICTION * 0.8 * normalVel;
+                this.vel.z = normalVel * e;
+                if (horizSpeed > 0) {
+                    const fricScale = Math.max(horizSpeed - frictionImpulse, 0) / horizSpeed;
+                    this.vel.x = vx * fricScale;
+                    this.vel.y = vy * fricScale;
+                }
+                this.swingAccel += this.vel.x * 0.02;
             }
             const W = this.ctx.canvas.width, H = this.ctx.canvas.height;
             if (this.pos.y < -20 || this.pos.x < -20 || this.pos.x > W + 20 || this.pos.z < -12) {
