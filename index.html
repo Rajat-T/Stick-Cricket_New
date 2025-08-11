@@ -76,21 +76,41 @@
             <div id="scorecardDisplay">
                 <h2>Match Scorecard</h2>
                 <div id="scorecardContent">
-                    <table id="scorecardTable">
-                        <thead>
-                            <tr>
-                                <th>Batsman</th>
-                                <th>Bowler</th>
-                                <th>How Out</th>
-                                <th>Runs</th>
-                                <th>Balls</th>
-                                <th>4s</th>
-                                <th>6s</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scorecardBody">
-                        </tbody>
-                    </table>
+                    <!-- Batting Table -->
+                    <div class="scorecard-section">
+                        <h3>Batting</h3>
+                        <table id="battingScorecardTable">
+                            <thead>
+                                <tr>
+                                    <th>Batsman</th>
+                                    <th>Bowler</th>
+                                    <th>How Out</th>
+                                    <th>Runs</th>
+                                    <th>Balls</th>
+                                    <th>4s</th>
+                                    <th>6s</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scorecardBody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- New Bowling Table -->
+                    <div class="scorecard-section">
+                        <h3>Bowling</h3>
+                        <table id="bowlingScorecardTable">
+                            <thead>
+                                <tr>
+                                    <th>Bowler</th>
+                                    <th>O</th>
+                                    <th>R</th>
+                                    <th>W</th>
+                                    <th>Econ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bowlingScorecardBody"></tbody>
+                        </table>
+                    </div>
                 </div>
                 <button id="backToGameBtn">Back to Game</button>
             </div>

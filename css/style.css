@@ -909,25 +909,63 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-#backToGameBtn {
-    background: linear-gradient(145deg, var(--light-blue), #0A192F);
-    color: var(--text-color);
-    border: none;
-    padding: 14px 28px;
-    margin-top: 25px;
-    border-radius: 28px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+.scorecard-section {
+    margin-bottom: 30px;
+    width: 100%;
 }
 
-#backToGameBtn:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5),
-        0 0 20px rgba(30, 58, 138, 0.6);
-    background: linear-gradient(145deg, #1E3A8A, #0A192F);
+#battingScorecardTable,
+#bowlingScorecardTable {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--text-color);
+    margin-top: 15px;
+}
+
+#battingScorecardTable th,
+#battingScorecardTable td,
+#bowlingScorecardTable th,
+#bowlingScorecardTable td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+#battingScorecardTable th,
+#bowlingScorecardTable th {
+    background-color: rgba(255, 215, 0, 0.25);
+    color: var(--secondary-color);
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#battingScorecardTable tbody tr:nth-child(even),
+#bowlingScorecardTable tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+#battingScorecardTable tr:hover,
+#bowlingScorecardTable tr:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive layout */
+@media (min-width: 768px) {
+    #scorecardContent {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .scorecard-section {
+        width: 48%;
+    }
 }
 
 @media (max-width: 768px) {
