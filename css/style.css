@@ -955,20 +955,34 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Responsive layout */
-@media (min-width: 768px) {
-    #scorecardContent {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-    }
-
-    .scorecard-section {
-        width: 48%;
-    }
+#scorecardContent {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
 
-@media (max-width: 768px) {
+.scorecard-section {
+    width: 100%;
+}
+
+#backToGameBtn {
+    background: linear-gradient(145deg, #FFD700, #FFB300);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-size: 1.1em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.2s ease-in-out;
+}
+
+#backToGameBtn:hover {
+    background: linear-gradient(145deg, #FFB300, #FFD700);
+    transform: scale(1.05);
+}@media (max-width: 768px) {
     .game-wrapper {
         max-width: 100%;
         border-radius: 12px;
