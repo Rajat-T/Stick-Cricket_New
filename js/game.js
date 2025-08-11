@@ -284,7 +284,7 @@ class Game {
         this.nextBall();
     }
     selectBowler() {
-        const eligibleBowlers = this.oppositionTeam.players.filter(player => 
+        const eligibleBowlers = this.oppositionTeam.players.filter(player =>
             (player.role.includes('Bowler') || player.role.includes('All-rounder'))
         );
 
@@ -309,7 +309,7 @@ class Game {
                 }
                 this.currentBowler = newBowler;
             }
-            
+
             this.bowlerNameEl.textContent = this.currentBowler.name;
             this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
             this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
@@ -319,7 +319,7 @@ class Game {
     updateBowlerStats(runs = 0, isWicket = false) {
         const bowlerName = this.currentBowler.name;
         let bowlerStat = this.bowlerStats.find(b => b.name === bowlerName);
-        
+
         if (!bowlerStat) {
             bowlerStat = {
                 name: bowlerName,
@@ -329,7 +329,7 @@ class Game {
             };
             this.bowlerStats.push(bowlerStat);
         }
-        
+
         bowlerStat.runs += runs;
         bowlerStat.balls++;
         if (isWicket) bowlerStat.wickets++;
@@ -366,14 +366,14 @@ class Game {
             `;
             this.scorecardBody.appendChild(row);
         });
-        
+
         const bowlingBody = document.getElementById('bowlingScorecardBody');
         bowlingBody.innerHTML = '';
-        
+
         this.bowlerStats.forEach(stat => {
             const overs = Math.floor(stat.balls / 6) + '.' + (stat.balls % 6);
             const economy = stat.balls > 0 ? (stat.runs / (stat.balls / 6)).toFixed(2) : '0.00';
-            
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${stat.name}</td>
@@ -446,16 +446,17 @@ class Game {
         if (this.fielders) this.fielders.forEach(f => f.draw());
     }
     gameLoop(timestamp) {
-        if ((this.gameState === 'playing' || this.gameState === 'between_balls') &&
-            !this.ball.isActive && !this.awaitingNextBall && !this.isGameOver() && !this.gameLoopPaused) {
-            this.awaitingNextBall = true;
-            setTimeout(() => this.nextBall(), 1200);
-        }
-        
         if (this.gameLoopPaused) {
             requestAnimationFrame(t => this.gameLoop(t));
             return;
         }
+
+        if ((this.gameState === 'playing' || this.gameState === 'between_balls') &&
+            !this.ball.isActive && !this.awaitingNextBall && !this.isGameOver()) {
+            this.awaitingNextBall = true;
+            setTimeout(() => this.nextBall(), 1200);
+        }
+
         if (this.lastTime === 0) {
             this.lastTime = timestamp;
         }
@@ -597,8 +598,11 @@ class Game {
             this.recordBallOutcome(0);
             this.incrementBall();
             this.updateScoreboard();
+            // FIX: Update bowler stats for dot balls
+            this.updateBowlerStats(0);
             this.gameState = 'between_balls';
-            this.awaitingNextBall = true; setTimeout(() => this.nextBall(), 1500);
+            this.awaitingNextBall = true;
+            setTimeout(() => this.nextBall(), 1500);
         }
     }
     handleWicket(type, runsScoredOnWicket) {
