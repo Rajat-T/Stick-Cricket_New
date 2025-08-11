@@ -284,18 +284,37 @@ class Game {
         this.nextBall();
     }
     selectBowler() {
-        const eligibleBowlers = this.oppositionTeam.players.filter(
-            player => player.role.includes('Bowler') || player.role.includes('All-rounder')
+        const eligibleBowlers = this.oppositionTeam.players.filter(player => 
+            (player.role.includes('Bowler') || player.role.includes('All-rounder'))
         );
-        if (eligibleBowlers.length === 0) {
-            this.currentBowler = this.oppositionTeam.players[0];
-        } else {
-            this.currentBowler = eligibleBowlers[Math.floor(Math.random() * eligibleBowlers.length)];
+
+        // Get current bowler's stats
+        const currentBowlerStats = this.bowlerStats.find(b => b.name === this.currentBowler?.name);
+        const currentBowlerBalls = currentBowlerStats?.balls || 0;
+
+        // Only change bowler if:
+        // 1. No current bowler OR
+        // 2. Current bowler has completed an over (balls % 6 === 0)
+        if (!this.currentBowler || currentBowlerBalls % 6 === 0) {
+            if (eligibleBowlers.length === 0) {
+                this.currentBowler = this.oppositionTeam.players[0];
+            } else {
+                // Try to pick a different bowler than the last one
+                let newBowler;
+                if (eligibleBowlers.length > 1) {
+                    const otherBowlers = eligibleBowlers.filter(b => b.name !== this.currentBowler?.name);
+                    newBowler = otherBowlers[Math.floor(Math.random() * otherBowlers.length)];
+                } else {
+                    newBowler = eligibleBowlers[0];
+                }
+                this.currentBowler = newBowler;
+            }
+            
+            this.bowlerNameEl.textContent = this.currentBowler.name;
+            this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
+            this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
+            this.bowlerTeamEl.style.color = this.oppositionTeam.secondaryColor;
         }
-        this.bowlerNameEl.textContent = this.currentBowler.name;
-        this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
-        this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
-        this.bowlerTeamEl.style.color = this.oppositionTeam.secondaryColor;
     }
     updateBowlerStats(runs = 0, isWicket = false) {
         const bowlerName = this.currentBowler.name;
@@ -433,7 +452,7 @@ class Game {
             setTimeout(() => this.nextBall(), 1200);
         }
         
-        if (this.gameLoopPaused && this.gameState !== 'between_balls') {
+        if (this.gameLoopPaused) {
             requestAnimationFrame(t => this.gameLoop(t));
             return;
         }
@@ -649,11 +668,11 @@ class Game {
     incrementBall() {
         this.balls++;
         if (this.balls % 6 === 0) {
+            const lastBall = this.currentOver[this.currentOver.length - 1] || '·';
+            this.showFeedback(`Over complete – last ball: ${lastBall}`, '#FFD700');
             this.currentOver = [];
             this.updateOverTracker();
             this.selectBowler();
-            const lastBall = this.currentOver[this.currentOver.length - 1] || '·';
-            this.showFeedback(`Over complete – last ball: ${lastBall}`, '#FFD700');
         }
     }
     updateOverTracker() {
