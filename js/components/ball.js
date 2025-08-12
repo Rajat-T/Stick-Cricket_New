@@ -3,17 +3,27 @@ class Ball {
         this.ctx = ctx;
         this.difficulty = difficulty;
         this.onMiss = onMiss;
+        // Gravity acceleration scaling the ball's downward pull
         this.G = 980 * 0.10;
+        // Coefficient for air resistance slowing a struck ball
         this.AIR_DRAG = 0.12;
+        // Energy retention when a fast ball strikes the pitch
         this.BOUNCE_FAST = 0.45;
+        // Energy retention for medium pace deliveries
         this.BOUNCE_MED = 0.52;
+        // Energy retention for spin bowling
         this.BOUNCE_SPIN = 0.58;
+        // Surface friction reducing horizontal speed after bounce
         this.GROUND_FRICTION = 0.10;
+        // Base magnitude of sideways swing acceleration
         this.SWING_BASE = 85;
+        // Rate at which swing acceleration decays over time
         this.SWING_DECAY = 2.2;
+        // Multiplier to spin rate imparted after a bounce
         this.SPIN_AFTER_BOUNCE = 2.4;
         this.reset();
     }
+    // Restore ball to an inactive starting state with no motion or swing
     reset() {
         this.isActive = false;
         this.isHit = false;
