@@ -16,6 +16,7 @@
     <div class="game-wrapper" id="gameWrapper">
         <canvas id="gameCanvas"></canvas>
         <div class="ui-overlay">
+            <!-- Scoreboard -->
             <div id="scoreboard">
                 <div class="score-item">SCORE: <span id="score">0</span></div>
                 <div class="score-item">OVERS: <span id="overs">0.0</span></div>
@@ -26,12 +27,14 @@
                 <div id="bowlerInfo">Bowler: <span id="bowlerName">-</span> (<span id="bowlerTeam"
                         class="bowler-team">-</span>)</div>
             </div>
+            <!-- Current over tracker -->
             <div id="overTracker">
                 <h4>CURRENT OVER</h4>
                 <div class="over-balls" id="overBalls"></div>
             </div>
             <button id="scorecardBtn" style="display:none; right:15px; top:120px;">Scorecard</button>
             <div id="feedbackText"></div>
+            <!-- Game menu -->
             <div id="gameMenu">
                 <h1>ULTIMATE STICK CRICKET</h1>
                 <p>Use LEFT/RIGHT arrow keys to smash the ball. Timing is everything. Can you become a legend?</p>
@@ -55,10 +58,12 @@
                     <p><span class="key">↑</span> Straight drive <span class="key">↓</span> Defensive shot</p>
                 </div>
             </div>
+            <!-- Team selection -->
             <div id="teamSelection">
                 <h2>Select Your IPL Team</h2>
                 <div class="teams-container" id="teamsContainer"></div>
             </div>
+            <!-- Team display -->
             <div id="teamDisplay">
                 <h2>Team Lineups</h2>
                 <div class="teams-lineup">
@@ -73,6 +78,7 @@
                 </div>
                 <button id="startGameBtn">Start Match</button>
             </div>
+            <!-- Scorecard display -->
             <div id="scorecardDisplay">
                 <h2>Match Scorecard</h2>
                 <div id="scorecardContent">
