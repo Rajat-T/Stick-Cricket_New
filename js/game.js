@@ -606,8 +606,11 @@ class Game {
         }
     }
     handleWicket(type, runsScoredOnWicket) {
+        // 1. Play wicket sound effects followed by a subdued cheer.
         this.playSound('wicket', 1, 0.6);
         this.playSound('cheer', 0.8, 0.3);
+
+        // 2. Update all relevant statistics for the dismissal.
         this.wicketsTaken++;
         this.updateBatsmanStats('wicket', type, runsScoredOnWicket);
         this.recordBallOutcome('W');
@@ -617,6 +620,8 @@ class Game {
         this.ball.isActive = false;
         this.updateBowlerStats(runsScoredOnWicket, true);
         this.gameState = 'between_balls';
+
+        // 3. If the match isn't over, schedule the next delivery after a delay.
         if (this.isGameOver()) {
             setTimeout(() => this.endGame(), 2000);
         } else {
@@ -626,8 +631,11 @@ class Game {
         }
     }
     updateBatsmanStats(eventType, value, runsScored = 0) {
+        // Find the current batsman entry (one without a recorded dismissal).
         let batsmanIndex = this.batsmanStats.findIndex(stat => stat.howOut === null || stat.howOut === undefined);
         let batsmanStatEntry;
+
+        // If no active entry exists, create one for the next player in the lineup.
         if (batsmanIndex === -1) {
             const nextBatsmanIndex = this.batsmanStats.length;
             if (nextBatsmanIndex < this.userTeam.players.length) {
@@ -650,12 +658,16 @@ class Game {
         } else {
             batsmanStatEntry = this.batsmanStats[batsmanIndex];
         }
+
+        // Modify the stats based on the event type.
         if (eventType === 'runs') {
+            // Runs scored: update tally and track boundaries.
             batsmanStatEntry.runs += value;
             batsmanStatEntry.balls += 1;
             if (value === 4) batsmanStatEntry.fours += 1;
             if (value === 6) batsmanStatEntry.sixes += 1;
         } else if (eventType === 'wicket') {
+            // Wicket: record dismissal details and any runs off the wicket ball.
             batsmanStatEntry.howOut = value;
             batsmanStatEntry.balls += 1;
             batsmanStatEntry.runs += runsScored;
