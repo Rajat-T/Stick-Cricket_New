@@ -714,9 +714,10 @@ class Game {
             this.overBallsContainer.appendChild(placeholder);
         }
     }
+    // Reset state and start the next delivery
     nextBall() {
-        this.awaitingNextBall = false;
-        this.gameLoopPaused = false;
+        this.awaitingNextBall = false; // clear waiting state between balls
+        this.gameLoopPaused = false; // resume game loop for the new ball
         if (this.isGameOver()) {
             this.endGame();
             return;
@@ -726,8 +727,8 @@ class Game {
         this.wicketsObject.reset();
         this.bowler.startDelivery();
         const ballTypes = ['fast', 'medium', 'spin'];
-        const ballType = ballTypes[Math.floor(Math.random() * ballTypes.length)];
-        const side = Math.random() > 0.5 ? 'off' : 'leg';
+        const ballType = ballTypes[Math.floor(Math.random() * ballTypes.length)]; // randomly select delivery type
+        const side = Math.random() > 0.5 ? 'off' : 'leg'; // randomly choose delivery side
         this.ball.bowl(ballType, side);
     }
     isGameOver() {
