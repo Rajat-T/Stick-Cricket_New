@@ -1,94 +1,60 @@
-# Ultimate Stick Cricket - IPL Edition
+# Ultimate Stick Cricket – IPL Edition
 
-A fully-featured stick cricket game built using HTML5, CSS3, and JavaScript, inspired by IPL teams and players. Created entirely using AI tools (Qwen Coder, Kimi K2, Gemini 2.5 Pro, Deepseek).
+A browser-based stick cricket game inspired by the Indian Premier League. The project uses only HTML5, CSS3, and vanilla JavaScript with all gameplay rendered on the HTML5 canvas. The entire codebase was produced with the assistance of AI coding tools and is meant to be easy to study or extend.
 
 ## Features
+- **Multiple Game Modes** – Quick Play, Tournament, Survival, Challenge, and Run Chase.
+- **Tournament Engine** – Full IPL-style tournament with six teams, group stages, automatic AI simulations, and a final.
+- **Authentic Teams** – Choose from CSK, MI, RCB, KKR, GT, and SRH with real player names.
+- **Responsive Canvas Graphics** – Animated stick figures, ball physics, crowd effects, and dynamic scoreboards.
+- **Keyboard & Touch Controls** – Arrow keys (← → ↑ ↓) or mobile taps for shot selection.
+- **Audio/Visual Feedback** – Particle effects, crowd animation, and synthesized sound.
+- **High‑Score Tracking** – Local storage remembers your personal bests.
 
-- **Game Modes:** Quick Play, Tournament, Survival, Challenge, and Run Chase.
-- **Tournament Mode:** Complete IPL-style tournament with 6 teams, group stages, and finals.
-- **IPL Teams:** Select from real IPL teams (CSK, MI, RCB, KKR, GT, SRH) with authentic player lineups.
-- **Canvas Graphics:** All gameplay and visuals rendered using HTML5 Canvas.
-- **Responsive UI:** Modern, animated interface with scoreboard, over tracker, team selection, and scorecard.
-- **Controls:** Arrow keys for shot selection (left, right, up, down) and touch support for mobile.
-- **Physics:** Realistic ball movement, swing, bounce, and hit detection.
-- **Audio & Visual Effects:** Particle effects, crowd animation, and synthesized sound feedback.
-- **Scorecard:** Detailed match stats including batsman, bowler, runs, balls, 4s, 6s, and wicket info.
-- **High Score Tracking:** Local storage for high scores.
-- **Tournament Features:** Points table, fixtures, Net Run Rate (NRR) calculations, and elimination system.
+## Tournament Details
+- Six teams split into two groups.
+- Round‑robin group stage (two matches per team) with user always chasing.
+- Net Run Rate (NRR) used for tie‑breaking in the standings.
+- Top team from each group reaches the final; win to claim the trophy!
 
-## Tournament Mode Details
+## Getting Started
+1. Clone or download this repository.
+2. Open `index.html` in a modern browser, or serve the folder with any static web server.
+3. Pick a mode, choose your team, and start swinging.
 
-- **6 IPL Teams:** Randomly divided into 2 groups of 3 teams each
-- **Group Stage:** Each team plays 2 matches within their group (round-robin)
-- **Chase Format:** User always chases targets set by AI opponents
-- **Net Run Rate:** Advanced tie-breaking system using cricket's standard NRR calculation
-- **Points System:** 2 points for win, 0 for loss
-- **Qualification:** Top team from each group advances to the final
-- **Interactive UI:** 
-  - Live points table with team standings, matches, wins, losses, points, and NRR
-  - Complete fixtures showing all match results and upcoming games
-  - User team highlighting in standings
-  - Real-time tournament progression
-- **Smart Progression:** Automatic AI match simulation and tournament advancement
-- **Elimination Handling:** Proper user elimination detection and menu return functionality
+No build step or dependencies are required.
+
+## Controls
+- **Batting:** use the arrow keys for different shots.
+- **Menu Navigation:** mouse or touch input.
+- Supports desktop and mobile browsers.
 
 ## File Structure
+```
+index.html           # Main page and canvas container
+css/style.css        # Styles for menus, overlays, and scoreboards
+js/main.js           # Entry point that sets up the UI and game instance
+js/game.js           # Core game state and match handling
+js/tournament.js     # Tournament logic, standings, and simulations
+js/teams.js          # Team and player definitions
+js/components/*.js   # Ball, bat, bowler, fielder, stadium, wickets, etc.
+```
 
-- `index.html` — Main game UI and canvas.
-- `css/style.css` — Responsive, animated styles for game elements and tournament UI.
-- `js/main.js` — Entry point, initializes game and UI with global game instance.
-- `js/game.js` — Core game logic, state management, event handling, and tournament integration.
-- `js/tournament.js` — Complete tournament management system with NRR calculations and standings.
-- `js/teams.js` — IPL team and player data.
-- `js/components/ball.js` — Ball physics, swing, bounce, hit logic.
-- `js/components/batsman.js` — Batsman character, swing animation.
-- `js/components/bowler.js` — Bowler character, delivery animation.
-- `js/components/character.js` — Base class for all stick figures.
-- `js/components/fielder.js` — Fielder AI, catching logic.
-- `js/components/stadium.js` — Stadium rendering, pitch, crowd, and features.
-- `js/components/wickets.js` — Wickets and bails, collision and animation.
-
-## How to Play
-
-- **Select Mode:** Choose your preferred game mode and difficulty.
-- **Pick Team:** Select your IPL team and view lineups.
-- **Batting:** Use arrow keys (←, →, ↑, ↓) for different shots. Timing and shot selection matter!
-- **Scoring:** Hit boundaries, chase targets, and avoid getting out.
-- **View Scorecard:** Track your performance and stats.
-- **Tournament Mode:** 
-  - Select your team to enter the tournament
-  - Play group stage matches (always chasing targets)
-  - Check Points Table and Fixtures anytime during the tournament
-  - Advance to the final if you top your group
-  - Win the tournament to become champion!
-
-## Recent Updates & Bug Fixes
-
-### Tournament System Enhancements:
-- **Fixed Match Result Recording:** Corrected winner/loser assignment in tournament matches
-- **Improved Tournament Progression:** Automatic continuation after failed chases
-- **Enhanced UI Functionality:** Fixed Points Table and Fixtures button accessibility
-- **Game State Management:** Proper reset between tournament matches
-- **UI Layout Fixes:** Resolved start game button overlap with team lineups
-- **Menu Navigation:** Fixed "Back to Menu" button functionality when eliminated
-- **Global Instance Management:** Ensured tournament functions work from all UI contexts
-- **Error Handling:** Added comprehensive error handling for tournament operations
-
-### Technical Improvements:
-- Simplified winner/loser assignment logic to prevent match result errors
-- Enhanced tournament overlay cleanup and state reset
-- Improved game state transitions between matches
-- Better separation of tournament and regular game modes
-
-## Technologies Used
-
+## Technologies
 - HTML5 Canvas
-- CSS3 (animations, gradients, responsive design)
+- CSS3 animations and responsive design
 - Vanilla JavaScript (ES6+)
-- Local Storage (high scores)
-- AI-generated code and assets
+- Local storage for persistence
+
+## Contributing
+Issues and pull requests are welcome. Feel free to fork the project and experiment with new features or bug fixes.
+
+## License
+This project is released under the [MIT License](LICENSE).
+
+## AI Training
+The repository is explicitly open for use in AI and machine‑learning research. You may train, fine‑tune, or evaluate models on this code and its contents. See [AI_TRAINING.md](AI_TRAINING.md) for details.
 
 ## Credits
+Created by Rajat-T using AI coding assistants. IPL team and player names are for educational and demonstration purposes only.
 
-- Created by Rajat-T using AI coding assistants.
-- IPL teams and player names for educational/demo purposes only.
