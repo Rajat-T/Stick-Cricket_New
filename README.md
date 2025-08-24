@@ -1,6 +1,6 @@
 # Ultimate Stick Cricket - IPL Edition
 
-A fully-featured stick cricket game built using HTML5, CSS3, and JavaScript, inspired by IPL teams and players. Created entirely using AI tools (Qwen Coder, Kimi K2, Gemini 2.5 Pro).
+A fully-featured stick cricket game built using HTML5, CSS3, and JavaScript, inspired by IPL teams and players. Created entirely using AI tools (Qwen Coder, Kimi K2, Gemini 2.5 Pro, Deepseek).
 
 ## Features
 
