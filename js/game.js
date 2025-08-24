@@ -24,6 +24,7 @@ class Game {
         this.currentBowler = null;
         this.batsmanStats = [];
         this.bowlerStats = [];
+        this.previousOverBowler = null; // Track who bowled the previous over
         this.awaitingNextBall = false;
         this.tournamentManager = null;
         this.isTournamentMode = false;
@@ -263,19 +264,22 @@ class Game {
         const difficulty = document.getElementById('difficulty').value;
         const difficulties = {
             amateur: {
-                ballSpeed: 0.8,
-                timingWindow: 1.2,
-                swing: 40
+                name: 'amateur',
+                ballSpeed: 0.75,
+                timingWindow: 1.3,
+                swing: 35
             },
             pro: {
+                name: 'pro',
                 ballSpeed: 1.0,
                 timingWindow: 1.0,
                 swing: 70
             },
             legend: {
-                ballSpeed: 1.3,
-                timingWindow: 0.8,
-                swing: 100
+                name: 'legend',
+                ballSpeed: 1.4,
+                timingWindow: 0.7,
+                swing: 110
             }
         };
         this.difficulty = difficulties[difficulty];
@@ -288,6 +292,7 @@ class Game {
         this.updateOverTracker();
         this.batsmanStats = [];
         this.bowlerStats = [];
+        this.previousOverBowler = null; // Track who bowled the previous over
         if (this.gameMode === 'quick') {
             this.wicketsTaken = 0;
             this.maxWickets = 10;
@@ -347,25 +352,73 @@ class Game {
             (player.role.includes('Bowler') || player.role.includes('All-rounder'))
         );
 
-        // Get current bowler's stats
+        // Get current bowler's stats to determine if this is a new over or continuation
         const currentBowlerStats = this.bowlerStats.find(b => b.name === this.currentBowler?.name);
         const currentBowlerBalls = currentBowlerStats?.balls || 0;
+        const isNewOver = this.balls % 6 === 0 && this.balls > 0; // New over if we just completed 6 balls
+
+        // Debug logging for bowling restrictions
+        if (isNewOver) {
+            console.log(`--- New Over Starting ---`);
+            console.log(`Current bowler: ${this.currentBowler?.name}`);
+            console.log(`Previous over bowler: ${this.previousOverBowler?.name}`);
+            console.log(`Balls bowled: ${this.balls}`);
+        }
 
         // Only change bowler if:
-        // 1. No current bowler OR
-        // 2. Current bowler has completed an over (balls % 6 === 0)
-        if (!this.currentBowler || currentBowlerBalls % 6 === 0) {
+        // 1. No current bowler (game start) OR
+        // 2. Starting a new over (after completing 6 balls)
+        if (!this.currentBowler || isNewOver) {
             if (eligibleBowlers.length === 0) {
                 this.currentBowler = this.oppositionTeam.players[0];
             } else {
-                // Try to pick a different bowler than the last one
-                let newBowler;
-                if (eligibleBowlers.length > 1) {
-                    const otherBowlers = eligibleBowlers.filter(b => b.name !== this.currentBowler?.name);
-                    newBowler = otherBowlers[Math.floor(Math.random() * otherBowlers.length)];
-                } else {
-                    newBowler = eligibleBowlers[0];
+                // Apply cricket bowling restrictions
+                let availableBowlers = [...eligibleBowlers];
+                
+                // RULE 1: No consecutive overs - exclude previous over's bowler
+                // Only apply this rule when we're starting a new over (not at game start)
+                if (this.previousOverBowler && isNewOver) {
+                    const beforeFilter = availableBowlers.length;
+                    availableBowlers = availableBowlers.filter(b => b.name !== this.previousOverBowler.name);
+                    console.log(`Filtered out previous over bowler: ${this.previousOverBowler.name}. Bowlers before: ${beforeFilter}, after: ${availableBowlers.length}`);
                 }
+                
+                // RULE 2: Limited overs restriction (n/5 rule)
+                // In limited overs cricket, a bowler can't bowl more than maxOvers/5 overs
+                if (this.maxOvers && this.maxOvers > 0) {
+                    const maxOversPerBowler = Math.floor(this.maxOvers / 5);
+                    if (maxOversPerBowler > 0) {
+                        availableBowlers = availableBowlers.filter(bowler => {
+                            const bowlerStat = this.bowlerStats.find(b => b.name === bowler.name);
+                            const bowlerOvers = bowlerStat ? Math.floor(bowlerStat.balls / 6) : 0;
+                            return bowlerOvers < maxOversPerBowler;
+                        });
+                    }
+                }
+                
+                // If no bowlers available after restrictions, relax rules progressively
+                if (availableBowlers.length === 0) {
+                    console.log('No bowlers available after restrictions, relaxing rules...');
+                    // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
+                    availableBowlers = [...eligibleBowlers];
+                    if (this.maxOvers && this.maxOvers > 0) {
+                        const maxOversPerBowler = Math.floor(this.maxOvers / 5);
+                        if (maxOversPerBowler > 0) {
+                            const limitedBowlers = availableBowlers.filter(bowler => {
+                                const bowlerStat = this.bowlerStats.find(b => b.name === bowler.name);
+                                const bowlerOvers = bowlerStat ? Math.floor(bowlerStat.balls / 6) : 0;
+                                return bowlerOvers < maxOversPerBowler;
+                            });
+                            if (limitedBowlers.length > 0) {
+                                availableBowlers = limitedBowlers;
+                            }
+                        }
+                    }
+                }
+                
+                // Select a random bowler from available options
+                const newBowler = availableBowlers[Math.floor(Math.random() * availableBowlers.length)];
+                console.log(`Selected new bowler: ${newBowler.name}`);
                 this.currentBowler = newBowler;
             }
 
@@ -586,12 +639,32 @@ class Game {
         if (this.batsman.isSwinging && this.ball.isActive && this.ball.isHittable()) {
             const result = this.ball.attemptHit(this.batsman.swingDirection);
             this.batsman.isSwinging = false;
+            
+            // Handle new dismissal types from enhanced physics
+            if (result.dismissal) {
+                this.handleWicket(result.dismissal, result.runs);
+                if (result.dismissal === 'Caught') {
+                    // Handle edge catches
+                    const catcher = this.fielders.sort((a, b) =>
+                        Math.hypot(a.x - this.ball.pos.x, a.y - this.ball.pos.y) -
+                        Math.hypot(b.x - this.ball.pos.x, b.y - this.ball.pos.y)
+                    )[0];
+                    if (catcher) {
+                        catcher.isCatching = true;
+                        this.ball.travelTo(catcher.x, catcher.y);
+                    }
+                }
+                return;
+            }
+            
             this.showFeedback(`${result.runs} · ${result.timing}`, result.color);
             this.playSound('hit', 0.8 + Math.random() * 0.2, 0.5);
             this.createParticles(this.ball.pos.x, this.ball.pos.y - this.ball.pos.z, 10, result.color);
+            
             const isMishit = result.timingScore < 2;
             const isLofted = this.ball.vel.z > 40;
-            const isCaught = isMishit && isLofted && Math.random() < 0.33;
+            const isCaught = isMishit && isLofted && Math.random() < 0.25; // Reduced catch probability since we now have edge catches
+            
             if (isCaught) {
                 this.handleWicket('Caught!', result.runs);
                 const catcher = this.fielders.sort((a, b) =>
@@ -752,6 +825,12 @@ class Game {
             this.showFeedback(`Over complete – last ball: ${lastBall}`, '#FFD700');
             this.currentOver = [];
             this.updateOverTracker();
+            
+            // Set the previous over bowler BEFORE selecting new bowler
+            if (this.currentBowler) {
+                this.previousOverBowler = this.currentBowler;
+            }
+            
             this.selectBowler();
         }
     }
@@ -790,10 +869,37 @@ class Game {
         this.gameState = 'playing';
         this.wicketsObject.reset();
         this.bowler.startDelivery();
-        const ballTypes = ['fast', 'medium', 'spin'];
-        const ballType = ballTypes[Math.floor(Math.random() * ballTypes.length)]; // randomly select delivery type
-        const side = Math.random() > 0.5 ? 'off' : 'leg'; // randomly choose delivery side
-        this.ball.bowl(ballType, side);
+        
+        // Enhanced ball type selection based on actual bowler
+        let ballTypes = ['fast', 'medium', 'spin'];
+        let ballType;
+        
+        if (this.currentBowler) {
+            const bowlerRole = this.currentBowler.role;
+            
+            // Determine likely ball type based on bowler's role
+            if (bowlerRole.includes('Bowler')) {
+                // Analyze bowler name for type hints (realistic but simplified)
+                const name = this.currentBowler.name.toLowerCase();
+                if (name.includes('bumrah') || name.includes('starc') || name.includes('cummins') || 
+                    name.includes('shami') || name.includes('natarajan') || name.includes('malik')) {
+                    ballTypes = ['fast', 'fast', 'medium']; // Fast bowlers
+                } else if (name.includes('rashid') || name.includes('chahal') || name.includes('narine') || 
+                           name.includes('chakravarthy') || name.includes('sharma') && name.includes('karn')) {
+                    ballTypes = ['spin', 'spin', 'medium']; // Spin bowlers
+                } else {
+                    ballTypes = ['medium', 'medium', 'fast']; // Medium pace bowlers
+                }
+            } else if (bowlerRole.includes('All-rounder')) {
+                ballTypes = ['medium', 'medium', 'spin']; // All-rounders tend to bowl medium/spin
+            }
+        }
+        
+        ballType = ballTypes[Math.floor(Math.random() * ballTypes.length)];
+        const side = Math.random() > 0.5 ? 'off' : 'leg';
+        
+        // Pass bowler type and bowling style information to ball
+        this.ball.bowl(ballType, side, this.currentBowler?.role, this.currentBowler?.bowlingStyle);
     }
     isGameOver() {
         const oversBowled = Math.floor(this.balls / 6);

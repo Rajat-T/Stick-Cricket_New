@@ -18,27 +18,33 @@ const IPL_TEAMS = [{
     },
     {
         name: "Ravindra Jadeja",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Spin"
     },
     {
         name: "Moeen Ali",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Spin"
     },
     {
         name: "Deepak Chahar",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Tushar Deshpande",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Matheesha Pathirana",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     },
     {
         name: "Shivam Dube",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Ajinkya Rahane",
@@ -46,7 +52,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Mitchell Santner",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Spin"
     }
     ]
 },
@@ -62,11 +69,13 @@ const IPL_TEAMS = [{
     },
     {
         name: "Hardik Pandya",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Jasprit Bumrah",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     },
     {
         name: "Suryakumar Yadav",
@@ -82,7 +91,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Piyush Chawla",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Spin"
     },
     {
         name: "Dewald Brevis",
@@ -90,7 +100,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Akash Madhwal",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Tilak Varma",
@@ -98,7 +109,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Gerald Coetzee",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     }
     ]
 },
@@ -118,11 +130,13 @@ const IPL_TEAMS = [{
     },
     {
         name: "Glenn Maxwell",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Spin"
     },
     {
         name: "Mohammed Siraj",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     },
     {
         name: "Dinesh Karthik",
@@ -130,7 +144,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Cameron Green",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Rajat Patidar",
@@ -138,19 +153,23 @@ const IPL_TEAMS = [{
     },
     {
         name: "Reece Topley",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Akash Deep",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Mahipal Lomror",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Spin"
     },
     {
         name: "Karn Sharma",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Spin"
     }
     ]
 },
@@ -166,19 +185,23 @@ const IPL_TEAMS = [{
     },
     {
         name: "Andre Russell",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Sunil Narine",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Spin"
     },
     {
         name: "Varun Chakravarthy",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Spin"
     },
     {
         name: "Venkatesh Iyer",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Rinku Singh",
@@ -186,7 +209,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Mitchell Starc",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     },
     {
         name: "Rahmanullah Gurbaz",
@@ -194,15 +218,18 @@ const IPL_TEAMS = [{
     },
     {
         name: "Harshit Rana",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Vaibhav Arora",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Suyash Sharma",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Spin"
     }
     ]
 },
@@ -218,7 +245,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Rashid Khan",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Spin"
     },
     {
         name: "David Miller",
@@ -226,11 +254,13 @@ const IPL_TEAMS = [{
     },
     {
         name: "Mohammed Shami",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     },
     {
         name: "Rahul Tewatia",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Spin"
     },
     {
         name: "Wriddhiman Saha",
@@ -242,19 +272,23 @@ const IPL_TEAMS = [{
     },
     {
         name: "Vijay Shankar",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Mohit Sharma",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Noor Ahmad",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Spin"
     },
     {
         name: "Spencer Johnson",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     }
     ]
 },
@@ -266,7 +300,8 @@ const IPL_TEAMS = [{
     secondaryColor: "#000000",
     players: [{
         name: "Pat Cummins",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     },
     {
         name: "Heinrich Klaasen",
@@ -274,7 +309,8 @@ const IPL_TEAMS = [{
     },
     {
         name: "Bhuvneshwar Kumar",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Abdul Samad",
@@ -294,19 +330,23 @@ const IPL_TEAMS = [{
     },
     {
         name: "Washington Sundar",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Spin"
     },
     {
         name: "T Natarajan",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Marco Jansen",
-        role: "All-rounder"
+        role: "All-rounder",
+        bowlingStyle: "Fast Medium"
     },
     {
         name: "Umran Malik",
-        role: "Bowler"
+        role: "Bowler",
+        bowlingStyle: "Fast"
     }
     ]
 }
