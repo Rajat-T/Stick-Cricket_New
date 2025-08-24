@@ -25,6 +25,9 @@ class Game {
         this.batsmanStats = [];
         this.bowlerStats = [];
         this.awaitingNextBall = false;
+        this.tournamentManager = null;
+        this.isTournamentMode = false;
+        this.tournamentTarget = null;
         requestAnimationFrame(t => this.gameLoop(t));
     }
     initUI() {
@@ -143,8 +146,21 @@ class Game {
             }
         }
         this.userTeam = team;
-        const oppositionTeams = IPL_TEAMS.filter(t => t.id !== team.id);
-        this.oppositionTeam = oppositionTeams[Math.floor(Math.random() * oppositionTeams.length)];
+        
+        if (this.isTournamentMode) {
+            // Initialize tournament with selected team
+            this.tournamentManager = new TournamentManager();
+            this.tournamentManager.initializeTournament(team.id);
+            
+            // Set opposition for current match
+            const currentMatchInfo = this.tournamentManager.getCurrentMatchInfo();
+            if (currentMatchInfo) {
+                this.oppositionTeam = currentMatchInfo.opposition;
+            }
+        } else {
+            const oppositionTeams = IPL_TEAMS.filter(t => t.id !== team.id);
+            this.oppositionTeam = oppositionTeams[Math.floor(Math.random() * oppositionTeams.length)];
+        }
         this.showFeedback(`${team.name} selected!`, team.primaryColor);
         setTimeout(() => {
             this.showTeamDisplay();
@@ -153,7 +169,18 @@ class Game {
     showTeamDisplay() {
         this.teamSelection.style.display = 'none';
         this.teamDisplay.style.display = 'flex';
-        this.userTeamName.textContent = `${this.userTeam.name} (Your Team)`;
+        
+        if (this.isTournamentMode && this.tournamentManager) {
+            const currentMatchInfo = this.tournamentManager.getCurrentMatchInfo();
+            if (currentMatchInfo) {
+                this.userTeamName.textContent = `${this.userTeam.name} (Your Team) - ${currentMatchInfo.matchType}`;
+            } else {
+                this.userTeamName.textContent = `${this.userTeam.name} (Your Team) - Tournament Match`;
+            }
+        } else {
+            this.userTeamName.textContent = `${this.userTeam.name} (Your Team)`;
+        }
+        
         this.userTeamName.style.color = this.userTeam.primaryColor;
         this.userTeamName.style.textShadow = `0 0 10px ${this.userTeam.primaryColor}`;
         this.userTeamPlayers.innerHTML = '';
@@ -166,7 +193,13 @@ class Game {
             `;
             this.userTeamPlayers.appendChild(li);
         });
-        this.oppositionTeamName.textContent = `${this.oppositionTeam.name}`;
+        
+        if (this.isTournamentMode) {
+            this.oppositionTeamName.textContent = `${this.oppositionTeam.name} - vs You`;
+        } else {
+            this.oppositionTeamName.textContent = `${this.oppositionTeam.name}`;
+        }
+        
         this.oppositionTeamName.style.color = this.oppositionTeam.primaryColor;
         this.oppositionTeamName.style.textShadow = `0 0 10px ${this.oppositionTeam.primaryColor}`;
         this.oppositionTeamPlayers.innerHTML = '';
@@ -185,9 +218,19 @@ class Game {
     prepareGame(mode) {
         this.gameMode = mode;
         this.menu.style.display = 'none';
-        this.teamSelection.style.display = 'flex';
-        this.teamDisplay.style.display = 'none';
-        this.gameState = 'team_selection';
+        this.isTournamentMode = mode === 'tournament';
+        
+        if (this.isTournamentMode) {
+            this.teamSelection.style.display = 'flex';
+            this.teamDisplay.style.display = 'none';
+            this.gameState = 'team_selection';
+            this.showFeedback('Select your team for the tournament!', '#FFD700');
+        } else {
+            this.teamSelection.style.display = 'flex';
+            this.teamDisplay.style.display = 'none';
+            this.gameState = 'team_selection';
+        }
+        
         this.userTeam = null;
         this.oppositionTeam = null;
         const cards = document.querySelectorAll('.team-card');
@@ -199,7 +242,9 @@ class Game {
             this.teamsContainer.innerHTML = '';
         }
         this.renderTeamSelection();
-        this.showFeedback('Select your team!', '#FFD700');
+        if (!this.isTournamentMode) {
+            this.showFeedback('Select your team!', '#FFD700');
+        }
         this.teamSelection.style.pointerEvents = 'auto';
     }
     startGame() {
@@ -252,7 +297,21 @@ class Game {
             this.wicketsTaken = 0;
             this.maxWickets = 10;
             this.maxOvers = 50;
-            this.targetRuns = null;
+            
+            if (this.isTournamentMode) {
+                // Generate target for user to chase (user always chases)
+                const difficulty = document.getElementById('difficulty').value;
+                let baseTarget;
+                if (difficulty === 'amateur') baseTarget = 80 + Math.floor(Math.random() * 41); // 80-120
+                else if (difficulty === 'pro') baseTarget = 120 + Math.floor(Math.random() * 61); // 120-180
+                else baseTarget = 150 + Math.floor(Math.random() * 71); // 150-220
+                
+                this.targetRuns = baseTarget;
+                this.tournamentTarget = baseTarget;
+                this.showFeedback(`Chase Target: ${this.targetRuns}`, '#FFD700');
+            } else {
+                this.targetRuns = null;
+            }
         } else if (this.gameMode === 'survival') {
             this.wicketsRemaining = 1;
             this.maxOvers = 999;
@@ -552,6 +611,11 @@ class Game {
                     setTimeout(() => this.endGame(), 2000);
                     return;
                 }
+                if (this.gameMode === 'tournament' && this.isTournamentMode && this.tournamentTarget && this.score >= this.tournamentTarget) {
+                    this.showFeedback(`Chase Complete! ${this.score}/${this.tournamentTarget}`, '#01FF70');
+                    setTimeout(() => this.endGame(), 2000);
+                    return;
+                }
                 if (result.runs === 4) this.fours++;
                 if (result.runs === 6) this.sixes++;
                 this.recordBallOutcome(result.runs);
@@ -734,7 +798,11 @@ class Game {
     isGameOver() {
         const oversBowled = Math.floor(this.balls / 6);
         if (this.gameMode === 'tournament') {
-            return this.wicketsTaken >= this.maxWickets;
+            if (this.isTournamentMode && this.tournamentTarget) {
+                return this.wicketsTaken >= this.maxWickets || oversBowled >= this.maxOvers || this.score >= this.tournamentTarget;
+            } else {
+                return this.wicketsTaken >= this.maxWickets;
+            }
         }
         if (this.gameMode === 'quick') {
             return oversBowled >= this.maxOvers || this.wicketsTaken >= this.maxWickets;
@@ -753,33 +821,66 @@ class Game {
     endGame() {
         this.gameState = 'game_over';
         let message = `Game Over! Score: ${this.score}`;
+        let isWin = false;
+        
         if (this.gameMode === 'challenge') {
             if (this.score >= this.targetRuns) {
                 message = `Target Achieved! ${this.score}/${this.targetRuns}`;
+                isWin = true;
             } else {
                 message = `Target Missed! ${this.score}/${this.targetRuns}`;
             }
         } else if (this.gameMode === 'runChase') {
             if (this.score >= this.targetRuns) {
                 message = `Chase Complete! ${this.score}/${this.targetRuns}`;
+                isWin = true;
             } else {
                 message = `Chase Failed! ${this.score}/${this.targetRuns}`;
             }
+        } else if (this.gameMode === 'tournament' && this.isTournamentMode) {
+            // Calculate opposition score (simplified)
+            const oppositionScore = this.tournamentTarget - 1 + Math.floor(Math.random() * 20); // Random around target
+            const oppositionBalls = Math.floor(Math.random() * 200) + 100; // Random ball count
+            
+            if (this.score >= this.tournamentTarget) {
+                message = `Chase Successful! ${this.score}/${this.tournamentTarget}`;
+                isWin = true;
+            } else {
+                message = `Chase Failed! ${this.score}/${this.tournamentTarget}`;
+                isWin = false;
+            }
+            
+            // Complete the tournament match regardless of win/loss
+            if (this.tournamentManager) {
+                const matchResult = this.tournamentManager.completeUserMatch(
+                    this.score, this.balls, oppositionScore, oppositionBalls
+                );
+                
+                // Store match result for display
+                this.lastMatchResult = matchResult;
+            } else {
+                console.error('Tournament manager not initialized!');
+                // Fallback for debugging
+                this.lastMatchResult = {
+                    resultText: isWin ? `You won by ${this.score - oppositionScore} runs` : `You lost by ${oppositionScore - this.score} runs`
+                };
+            }
         }
-        this.showFeedback(message, '#FFDC00');
+        
+        this.showFeedback(message, isWin ? '#01FF70' : '#FFDC00');
+        
         if (this.score > this.highScore) {
             this.highScore = this.score;
             localStorage.setItem('ultimateCricketHighScore', this.highScore);
             this.highScoreValueEl.textContent = this.highScore;
         }
+        
         setTimeout(() => {
-            this.menu.style.display = 'flex';
-            this.wrapper.classList.remove('playing');
-            this.scoreboard.style.display = 'none';
-            this.overTracker.style.display = 'none';
-            this.scorecardBtn.style.display = 'none';
-            this.feedbackText.style.opacity = 0;
-            this.hideScorecard();
+            if (this.isTournamentMode) {
+                this.showTournamentResults();
+            } else {
+                this.returnToMenu();
+            }
         }, 3000);
     }
     updateScoreboard() {
@@ -787,6 +888,8 @@ class Game {
         this.wicketsEl.textContent = this.wicketsTaken + '/' + this.maxWickets;
         if (this.gameMode === 'runChase') {
             this.oversEl.textContent = `${Math.floor(this.balls / 6)}.${this.balls % 6} (T: ${this.targetRuns})`;
+        } else if (this.gameMode === 'tournament' && this.isTournamentMode && this.tournamentTarget) {
+            this.oversEl.textContent = `${Math.floor(this.balls / 6)}.${this.balls % 6} (T: ${this.tournamentTarget})`;
         } else {
             this.oversEl.textContent = `${Math.floor(this.balls / 6)}.${this.balls % 6}`;
         }
@@ -853,6 +956,401 @@ class Game {
             this.ctx.shadowBlur = 0;
         });
         this.ctx.globalAlpha = 1.0;
+    }
+    
+    returnToMenu() {
+        // Remove all tournament overlays and results
+        document.querySelectorAll('.tournament-results-overlay, .tournament-overlay').forEach(el => el.remove());
+        
+        // Reset tournament mode state
+        this.isTournamentMode = false;
+        this.tournamentManager = null;
+        this.lastMatchResult = null;
+        
+        // Show main menu
+        this.menu.style.display = 'flex';
+        this.wrapper.classList.remove('playing');
+        this.scoreboard.style.display = 'none';
+        this.overTracker.style.display = 'none';
+        this.scorecardBtn.style.display = 'none';
+        this.feedbackText.style.opacity = 0;
+        this.hideScorecard();
+        
+        // Hide team selection and display screens
+        this.teamSelection.style.display = 'none';
+        this.teamDisplay.style.display = 'none';
+        
+        // Reset game state
+        this.gameState = 'menu';
+    }
+    
+    showTournamentResults() {
+        // Hide game elements
+        this.wrapper.classList.remove('playing');
+        this.scoreboard.style.display = 'none';
+        this.overTracker.style.display = 'none';
+        this.scorecardBtn.style.display = 'none';
+        this.feedbackText.style.opacity = 0;
+        this.hideScorecard();
+        
+        // Show tournament results
+        this.showTournamentResultsScreen();
+    }
+    
+    showTournamentResultsScreen() {
+        // Remove any existing tournament results
+        const existingResults = document.getElementById('tournamentResults');
+        if (existingResults) {
+            existingResults.remove();
+        }
+        
+        // Create tournament results screen
+        const resultsDiv = document.createElement('div');
+        resultsDiv.id = 'tournamentResults';
+        resultsDiv.className = 'tournament-results-overlay';
+        
+        const tournamentData = this.tournamentManager.getTournamentData();
+        const isComplete = tournamentData.isComplete;
+        const hasNextMatch = tournamentData.currentMatch !== null;
+        
+        // If no next match, try to find one by completing any remaining AI matches
+        if (!isComplete && !hasNextMatch) {
+            this.checkTournamentProgress();
+            // Refresh tournament data after progress check
+            const updatedTournamentData = this.tournamentManager.getTournamentData();
+            const updatedHasNextMatch = updatedTournamentData.currentMatch !== null;
+            const canStillQualify = updatedHasNextMatch ? false : this.tournamentManager.canUserStillQualify();
+            
+            // Use updated data
+            if (updatedHasNextMatch) {
+                const nextMatchInfo = this.tournamentManager.getCurrentMatchInfo();
+                resultHTML += `
+                    <div class="next-match-info">
+                        <h3>Next Match</h3>
+                        <p>${nextMatchInfo.matchType}: ${this.userTeam.shortName} vs ${nextMatchInfo.opposition.shortName}</p>
+                    </div>
+                    <div class="tournament-buttons">
+                        <button class="menu-btn tournament-btn" onclick="game.showPointsTable()">Points Table</button>
+                        <button class="menu-btn tournament-btn" onclick="game.showFixtures()">Fixtures</button>
+                        <button class="menu-btn tournament-btn next-match-btn" onclick="game.playNextTournamentMatch()">Next Match</button>
+                    </div>
+                `;
+                resultHTML += `</div>`;
+                resultsDiv.innerHTML = resultHTML;
+                document.body.appendChild(resultsDiv);
+                return;
+            }
+        }
+        
+        // Check if user can still qualify (only if tournament not complete and no current match)
+        const canStillQualify = !isComplete && !hasNextMatch ? this.tournamentManager.canUserStillQualify() : false;
+        
+        let resultHTML = `
+            <div class="tournament-results-content">
+                <h2>Match Result</h2>
+                <div class="match-result">
+                    <p class="result-text">${this.lastMatchResult ? this.lastMatchResult.resultText : 'Match completed'}</p>
+                </div>
+        `;
+        
+        if (isComplete) {
+            resultHTML += `
+                <div class="tournament-complete">
+                    <h3>🏆 Tournament Complete! 🏆</h3>
+                    <p class="winner">Winner: ${tournamentData.tournamentWinner.name}</p>
+                </div>
+                <button class="menu-btn tournament-btn" onclick="game.returnToMenu()">Back to Menu</button>
+            `;
+        } else if (hasNextMatch) {
+            const nextMatchInfo = this.tournamentManager.getCurrentMatchInfo();
+            resultHTML += `
+                <div class="next-match-info">
+                    <h3>Next Match</h3>
+                    <p>${nextMatchInfo.matchType}: ${this.userTeam.shortName} vs ${nextMatchInfo.opposition.shortName}</p>
+                </div>
+                <div class="tournament-buttons">
+                    <button class="menu-btn tournament-btn" onclick="game.showPointsTable()">Points Table</button>
+                    <button class="menu-btn tournament-btn" onclick="game.showFixtures()">Fixtures</button>
+                    <button class="menu-btn tournament-btn next-match-btn" onclick="game.playNextTournamentMatch()">Next Match</button>
+                </div>
+            `;
+        } else if (canStillQualify) {
+            // User has completed their matches but can still qualify - wait for other matches
+            resultHTML += `
+                <div class="tournament-waiting">
+                    <h3>Waiting for Other Matches</h3>
+                    <p>You have completed your group matches. Waiting for other teams to finish.</p>
+                    <p>You can still qualify for the final!</p>
+                </div>
+                <div class="tournament-buttons">
+                    <button class="menu-btn tournament-btn" onclick="game.showPointsTable()">Points Table</button>
+                    <button class="menu-btn tournament-btn" onclick="game.showFixtures()">Fixtures</button>
+                    <button class="menu-btn tournament-btn" onclick="game.checkTournamentProgress()">Check Progress</button>
+                </div>
+            `;
+        } else {
+            // User eliminated
+            resultHTML += `
+                <div class="tournament-eliminated">
+                    <h3>Tournament Over</h3>
+                    <p>Your team has been eliminated from the tournament.</p>
+                </div>
+                <div class="tournament-buttons">
+                    <button class="menu-btn tournament-btn" onclick="game.showPointsTable()">Final Points Table</button>
+                    <button class="menu-btn tournament-btn" onclick="game.showFixtures()">All Results</button>
+                    <button class="menu-btn tournament-btn" onclick="game.returnToMenu()">Back to Menu</button>
+                </div>
+            `;
+        }
+        
+        resultHTML += `</div>`;
+        resultsDiv.innerHTML = resultHTML;
+        
+        document.body.appendChild(resultsDiv);
+    }
+    
+    showPointsTable() {
+        if (!this.tournamentManager) {
+            console.error('Tournament manager not initialized');
+            return;
+        }
+        
+        try {
+            const pointsTable = this.tournamentManager.getPointsTable();
+            
+            // Remove existing overlays
+            document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
+            
+            const overlayDiv = document.createElement('div');
+            overlayDiv.className = 'tournament-overlay points-table-overlay';
+            
+            let tableHTML = `
+                <div class="tournament-content">
+                    <h2>Points Table</h2>
+                    <div class="groups-container">
+                        <div class="group-table">
+                            <h3>Group A</h3>
+                            <table class="points-table">
+                                <thead>
+                                    <tr>
+                                        <th>Team</th>
+                                        <th>M</th>
+                                        <th>W</th>
+                                        <th>L</th>
+                                        <th>Pts</th>
+                                        <th>NRR</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            pointsTable.groupA.forEach(team => {
+                const isUserTeam = team.team.id === this.userTeam.id;
+                tableHTML += `
+                    <tr class="${isUserTeam ? 'user-team-row' : ''}">
+                        <td class="team-name">${team.team.shortName}</td>
+                        <td>${team.matches}</td>
+                        <td>${team.won}</td>
+                        <td>${team.lost}</td>
+                        <td>${team.points}</td>
+                        <td>${team.nrr}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="group-table">
+                            <h3>Group B</h3>
+                            <table class="points-table">
+                                <thead>
+                                    <tr>
+                                        <th>Team</th>
+                                        <th>M</th>
+                                        <th>W</th>
+                                        <th>L</th>
+                                        <th>Pts</th>
+                                        <th>NRR</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            pointsTable.groupB.forEach(team => {
+                const isUserTeam = team.team.id === this.userTeam.id;
+                tableHTML += `
+                    <tr class="${isUserTeam ? 'user-team-row' : ''}">
+                        <td class="team-name">${team.team.shortName}</td>
+                        <td>${team.matches}</td>
+                        <td>${team.won}</td>
+                        <td>${team.lost}</td>
+                        <td>${team.points}</td>
+                        <td>${team.nrr}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <button class="menu-btn tournament-btn" onclick="game.closeTournamentOverlay()">Close</button>
+                </div>
+            `;
+            
+            overlayDiv.innerHTML = tableHTML;
+            document.body.appendChild(overlayDiv);
+        } catch (error) {
+            console.error('Error showing points table:', error);
+        }
+    }
+    
+    showFixtures() {
+        if (!this.tournamentManager) {
+            console.error('Tournament manager not initialized');
+            return;
+        }
+        
+        try {
+            const fixtures = this.tournamentManager.getFixtures();
+            
+            // Remove existing overlays
+            document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
+            
+            const overlayDiv = document.createElement('div');
+            overlayDiv.className = 'tournament-overlay fixtures-overlay';
+            
+            let fixturesHTML = `
+                <div class="tournament-content">
+                    <h2>Tournament Fixtures</h2>
+                    <div class="fixtures-container">
+            `;
+            
+            const groupAMatches = fixtures.filter(f => f.type === 'Group A');
+            const groupBMatches = fixtures.filter(f => f.type === 'Group B');
+            const finalMatch = fixtures.filter(f => f.type === 'Final');
+            
+            fixturesHTML += `<div class="fixture-group">
+                                <h3>Group A Matches</h3>`;
+            
+            groupAMatches.forEach(match => {
+                const statusClass = match.completed ? 'completed' : 'pending';
+                fixturesHTML += `
+                    <div class="fixture-item ${statusClass}">
+                        <div class="match-teams">${match.team1} vs ${match.team2}</div>
+                        <div class="match-result">${match.result}</div>
+                    </div>
+                `;
+            });
+            
+            fixturesHTML += `</div><div class="fixture-group">
+                                <h3>Group B Matches</h3>`;
+            
+            groupBMatches.forEach(match => {
+                const statusClass = match.completed ? 'completed' : 'pending';
+                fixturesHTML += `
+                    <div class="fixture-item ${statusClass}">
+                        <div class="match-teams">${match.team1} vs ${match.team2}</div>
+                        <div class="match-result">${match.result}</div>
+                    </div>
+                `;
+            });
+            
+            fixturesHTML += `</div>`;
+            
+            if (finalMatch.length > 0) {
+                fixturesHTML += `<div class="fixture-group">
+                                    <h3>Final</h3>`;
+                finalMatch.forEach(match => {
+                    const statusClass = match.completed ? 'completed' : 'pending';
+                    fixturesHTML += `
+                        <div class="fixture-item ${statusClass}">
+                            <div class="match-teams">${match.team1} vs ${match.team2}</div>
+                            <div class="match-result">${match.result}</div>
+                        </div>
+                    `;
+                });
+                fixturesHTML += `</div>`;
+            }
+            
+            fixturesHTML += `
+                    </div>
+                    <button class="menu-btn tournament-btn" onclick="game.closeTournamentOverlay()">Close</button>
+                </div>
+            `;
+            
+            overlayDiv.innerHTML = fixturesHTML;
+            document.body.appendChild(overlayDiv);
+        } catch (error) {
+            console.error('Error showing fixtures:', error);
+        }
+    }
+    
+    closeTournamentOverlay() {
+        document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
+    }
+    
+    playNextTournamentMatch() {
+        // Remove tournament results
+        document.querySelectorAll('.tournament-results-overlay, .tournament-overlay').forEach(el => el.remove());
+        
+        // Reset game state for next match
+        this.gameState = 'team_selection';
+        
+        // Update opposition team for next match
+        const nextMatchInfo = this.tournamentManager.getCurrentMatchInfo();
+        if (nextMatchInfo) {
+            this.oppositionTeam = nextMatchInfo.opposition;
+            
+            // Reset previous match data
+            this.score = 0;
+            this.balls = 0;
+            this.wicketsTaken = 0;
+            this.fours = 0;
+            this.sixes = 0;
+            this.currentOver = [];
+            this.batsmanStats = [];
+            this.bowlerStats = [];
+            this.lastMatchResult = null;
+            
+            // Show team display for next match
+            this.showTeamDisplay();
+        } else {
+            console.error('No next match available');
+            this.returnToMenu();
+        }
+    }
+    
+    checkTournamentProgress() {
+        // Remove current overlays
+        document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
+        
+        // Get tournament data
+        const tournamentData = this.tournamentManager.getTournamentData();
+        
+        // Simulate any remaining AI vs AI matches to progress tournament
+        const remainingAIMatches = tournamentData.totalMatches.filter(m => !m.isUserMatch && !m.result);
+        
+        if (remainingAIMatches.length > 0) {
+            // Complete all remaining AI matches
+            remainingAIMatches.forEach(match => {
+                const result = this.tournamentManager.simulateMatch(match.team1, match.team2);
+                match.result = result;
+                this.tournamentManager.updateStandings(match);
+                this.tournamentManager.completedMatches.push(match);
+            });
+        }
+        
+        // After completing AI matches, check if user can progress
+        this.tournamentManager.findNextUserMatch();
+        
+        // Show updated tournament status
+        setTimeout(() => {
+            this.showTournamentResults();
+        }, 500);
     }
     playSound(type, pitch = 1, gain = 0.5) {
         if (!this.audioContext) return;
