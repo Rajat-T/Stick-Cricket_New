@@ -15,7 +15,8 @@ class Game {
         this.highScoreValueEl.textContent = this.highScore;
         this.stadiums = ['lords', 'mcg', 'wankhede'];
         this.currentStadium = 'lords';
-        this.stadium = new Stadium(this.ctx, this.currentStadium);
+        this.isNightGame = Math.random() > 0.5; // Randomly decide if it's a night game
+        this.stadium = new Stadium(this.ctx, this.currentStadium, this.isNightGame);
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
         this.currentOver = [];
@@ -100,6 +101,47 @@ class Game {
             this.teamsContainer.appendChild(wrapper);
         });
     }
+    // Method to generate match conditions (day/night and stadium)
+    generateMatchConditions() {
+        // Randomly select stadium
+        this.currentStadium = this.stadiums[Math.floor(Math.random() * this.stadiums.length)];
+        
+        // Randomly decide day or night game (50% chance each)
+        this.isNightGame = Math.random() > 0.5;
+        
+        // Display match condition feedback
+        const conditionText = this.isNightGame ? 'Night Match' : 'Day Match';
+        const stadiumName = this.getStadiumDisplayName(this.currentStadium);
+        this.showMatchConditionFeedback(`${conditionText} at ${stadiumName}`);
+    }
+    
+    // Helper method to get display name for stadium
+    getStadiumDisplayName(stadiumType) {
+        switch (stadiumType) {
+            case 'lords':
+                return "Lord's";
+            case 'mcg':
+                return "MCG";
+            case 'wankhede':
+                return "Wankhede";
+            default:
+                return "International Stadium";
+        }
+    }
+    
+    // Method to show match condition feedback
+    showMatchConditionFeedback(text) {
+        const conditionEl = document.getElementById('matchConditions');
+        if (conditionEl) {
+            conditionEl.textContent = text;
+            conditionEl.style.display = 'block';
+            
+            // Apply appropriate CSS class for day/night styling
+            conditionEl.classList.remove('day', 'night');
+            conditionEl.classList.add(this.isNightGame ? 'night' : 'day');
+        }
+    }
+    
     adjustColor(color, amount) {
         let usePound = false;
         if (color[0] == "#") {
@@ -283,7 +325,10 @@ class Game {
             }
         };
         this.difficulty = difficulties[difficulty];
-        this.currentStadium = this.stadiums[Math.floor(Math.random() * this.stadiums.length)];
+        
+        // Generate match conditions (stadium and day/night)
+        this.generateMatchConditions();
+        
         this.score = 0;
         this.balls = 0;
         this.fours = 0;
@@ -335,7 +380,8 @@ class Game {
             this.maxOvers = 5;
             this.targetRuns = 50;
         }
-        this.stadium = new Stadium(this.ctx, this.currentStadium);
+        // Randomly decide day or night game for each new match
+        this.stadium = new Stadium(this.ctx, this.currentStadium, this.isNightGame);
         this.wicketsObject = new Wickets(this.ctx);
         this.batsman = new Batsman(this.ctx);
         this.ball = new Ball(this.ctx, this.difficulty, () => this.onBallMissed());
@@ -626,10 +672,41 @@ class Game {
         this.crowd.forEach(person => {
             const x = W * person.x;
             const y = H * person.y;
+            
+            // Enhanced crowd members with better shapes
             this.ctx.fillStyle = person.color;
+            
+            // Draw crowd member as a simple person shape
+            // Head
             this.ctx.beginPath();
-            this.ctx.arc(x, y, person.size, 0, Math.PI * 2);
+            this.ctx.arc(x, y - person.size, person.size * 0.8, 0, Math.PI * 2);
             this.ctx.fill();
+            
+            // Body
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, y - person.size * 0.2);
+            this.ctx.lineTo(x, y + person.size * 1.5);
+            this.ctx.strokeStyle = person.color;
+            this.ctx.lineWidth = person.size * 0.5;
+            this.ctx.lineCap = 'round';
+            this.ctx.stroke();
+            
+            // Arms
+            this.ctx.beginPath();
+            this.ctx.moveTo(x - person.size, y);
+            this.ctx.lineTo(x + person.size, y);
+            this.ctx.stroke();
+            
+            // Add cheering animation based on game events
+            if (this.gameState === 'playing' && Math.random() < 0.02) {
+                // Occasionally raise arms for cheering
+                this.ctx.beginPath();
+                this.ctx.moveTo(x - person.size, y - person.size);
+                this.ctx.lineTo(x + person.size, y - person.size);
+                this.ctx.stroke();
+            }
+            
+            // Move crowd members slightly for dynamic effect
             person.x += (Math.random() - 0.5) * 0.01 * person.speed;
             if (person.x < 0) person.x = 0;
             if (person.x > 1) person.x = 1;
@@ -704,13 +781,18 @@ class Game {
                 } else {
                     this.playSound('cheer', 1, 0.2);
                     if (result.runs >= 4) {
-                        this.createParticles(this.ball.pos.x, 50, 20, '#FFD700');
+                        // Create special boundary particles
+                        this.createBoundaryParticles(this.ball.pos.x, 50, 30, '#FFD700');
                         if (result.runs === 6) {
                             this.wrapper.style.animation = 'shake 0.5s';
                             setTimeout(() => this.wrapper.style.animation = '', 500);
+                            // Extra particles for sixes
+                            this.createBoundaryParticles(this.ball.pos.x, 50, 20, '#FF4136');
                         }
+                    } else {
+                        // Regular particles for 1s, 2s, 3s
+                        this.createParticles(this.ball.pos.x, 50, 8, '#ffffff');
                     }
-                    this.createParticles(this.ball.pos.x, 50, 8, '#ffffff');
                 }
                 this.ball.isActive = false;
                 this.gameState = 'between_balls';
@@ -758,7 +840,16 @@ class Game {
         this.updateBowlerStats(runsScoredOnWicket, true);
         this.gameState = 'between_balls';
 
-        // 3. If the match isn't over, schedule the next delivery after a delay.
+        // 3. Create celebration particles for wicket
+        this.createWicketParticles(this.ball.pos.x, this.ball.pos.y - this.ball.pos.z, 50);
+        
+        // 4. Add screen flash effect for dramatic wicket
+        this.wrapper.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        setTimeout(() => {
+            this.wrapper.style.backgroundColor = '';
+        }, 300);
+
+        // 5. If the match isn't over, schedule the next delivery after a delay.
         if (this.isGameOver()) {
             setTimeout(() => this.endGame(), 2000);
         } else {
@@ -1016,8 +1107,18 @@ class Game {
     showFeedback(text, color) {
         this.feedbackText.textContent = text;
         this.feedbackText.style.color = color;
+        this.feedbackText.style.textShadow = `0 0 20px ${color}, 0 0 30px ${color}`;
         this.feedbackText.style.transform = 'translate(-50%, -50%) scale(1)';
         this.feedbackText.style.opacity = 1;
+        
+        // Add pulsing effect for important events
+        if (text.includes('Boundary') || text.includes('SIX') || text.includes('Wicket') || text.includes('Target')) {
+            this.feedbackText.style.animation = 'feedbackPulse 0.3s ease-in-out infinite alternate';
+            setTimeout(() => {
+                this.feedbackText.style.animation = '';
+            }, 1500);
+        }
+        
         setTimeout(() => {
             this.feedbackText.style.transform = 'translate(-50%, -50%) scale(0.7)';
             this.feedbackText.style.opacity = 0;
@@ -1033,7 +1134,43 @@ class Game {
                 speedX: (Math.random() - 0.5) * 12,
                 speedY: (Math.random() - 0.5) * 12,
                 life: 1.0,
-                glow: Math.random() > 0.5
+                glow: Math.random() > 0.5,
+                type: 'standard'
+            });
+        }
+    }
+    
+    // Create special effect particles for boundaries
+    createBoundaryParticles(x, y, count, color) {
+        for (let i = 0; i < count; i++) {
+            this.particles.push({
+                x: x,
+                y: y,
+                size: Math.random() * 12 + 6,
+                color: color,
+                speedX: (Math.random() - 0.5) * 20,
+                speedY: (Math.random() - 0.5) * 20,
+                life: 1.5,
+                glow: true,
+                type: 'boundary'
+            });
+        }
+    }
+    
+    // Create celebration particles for wickets
+    createWicketParticles(x, y, count) {
+        for (let i = 0; i < count; i++) {
+            const colors = ['#FF4136', '#01FF70', '#FFDC00', '#B10DC9', '#FF851B'];
+            this.particles.push({
+                x: x,
+                y: y,
+                size: Math.random() * 10 + 5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speedX: (Math.random() - 0.5) * 25,
+                speedY: (Math.random() - 0.5) * 25 - 5, // Upward bias
+                life: 2.0,
+                glow: true,
+                type: 'celebration'
             });
         }
     }
@@ -1051,17 +1188,84 @@ class Game {
     drawParticles() {
         this.particles.forEach(p => {
             this.ctx.globalAlpha = p.life;
+            
+            // Apply glow effect based on particle type
             if (p.glow) {
                 this.ctx.shadowColor = p.color;
-                this.ctx.shadowBlur = 15;
+                this.ctx.shadowBlur = p.type === 'boundary' ? 25 : 
+                                  p.type === 'celebration' ? 20 : 15;
             }
-            this.ctx.fillStyle = p.color;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            this.ctx.fill();
+            
+            // Draw different shapes based on particle type
+            switch (p.type) {
+                case 'boundary':
+                    // Star-shaped particles for boundaries
+                    this.ctx.fillStyle = p.color;
+                    this.drawStar(p.x, p.y, p.size * 0.5, p.size, 5);
+                    break;
+                case 'celebration':
+                    // Sparkle effect for wickets
+                    this.ctx.fillStyle = p.color;
+                    this.drawSparkle(p.x, p.y, p.size);
+                    break;
+                default:
+                    // Standard circular particles
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+            }
+            
             this.ctx.shadowBlur = 0;
         });
         this.ctx.globalAlpha = 1.0;
+    }
+    
+    // Draw a star shape for special effects
+    drawStar(cx, cy, innerRadius, outerRadius, points) {
+        let rot = Math.PI / 2 * 3;
+        let x = cx;
+        let y = cy;
+        const step = Math.PI / points;
+        
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy - outerRadius);
+        
+        for (let i = 0; i < points; i++) {
+            x = cx + Math.cos(rot) * outerRadius;
+            y = cy + Math.sin(rot) * outerRadius;
+            this.ctx.lineTo(x, y);
+            rot += step;
+            
+            x = cx + Math.cos(rot) * innerRadius;
+            y = cy + Math.sin(rot) * innerRadius;
+            this.ctx.lineTo(x, y);
+            rot += step;
+        }
+        
+        this.ctx.lineTo(cx, cy - outerRadius);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+    
+    // Draw a sparkle effect
+    drawSparkle(cx, cy, size) {
+        // Draw main diamond
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy - size);
+        this.ctx.lineTo(cx + size * 0.7, cy);
+        this.ctx.lineTo(cx, cy + size);
+        this.ctx.lineTo(cx - size * 0.7, cy);
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        // Draw cross lines
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx - size * 0.5, cy);
+        this.ctx.lineTo(cx + size * 0.5, cy);
+        this.ctx.moveTo(cx, cy - size * 0.5);
+        this.ctx.lineTo(cx, cy + size * 0.5);
+        this.ctx.stroke();
     }
     
     returnToMenu() {
@@ -1410,6 +1614,9 @@ class Game {
         const nextMatchInfo = this.tournamentManager.getCurrentMatchInfo();
         if (nextMatchInfo) {
             this.oppositionTeam = nextMatchInfo.opposition;
+            
+            // Generate new match conditions for tournament match (day/night and stadium)
+            this.generateMatchConditions();
             
             // Reset previous match data
             this.score = 0;

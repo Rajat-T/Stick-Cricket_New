@@ -159,6 +159,37 @@ body {
     border-bottom: none;
 }
 
+/* Match conditions indicator */
+.match-condition {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 255, 255, 0.1));
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.match-condition.night {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.3), rgba(75, 0, 130, 0.2));
+    border-color: rgba(138, 43, 226, 0.5);
+    text-shadow: 0 0 12px rgba(138, 43, 226, 0.9);
+    box-shadow: inset 0 0 15px rgba(138, 43, 226, 0.3);
+    color: #E6E6FA;
+}
+
+.match-condition.day {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.2));
+    border-color: rgba(255, 215, 0, 0.6);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    box-shadow: inset 0 0 12px rgba(255, 215, 0, 0.3);
+    color: #FFFACD;
+}
+
 #scoreboard .score-item span {
     color: var(--secondary-color);
     font-weight: 700;

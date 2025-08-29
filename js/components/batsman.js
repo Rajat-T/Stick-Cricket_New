@@ -24,36 +24,130 @@ class Batsman extends Character {
     draw() {
         this.x = this.ctx.canvas.width / 2;
         this.y = this.ctx.canvas.height * 0.9;
-        this.drawStick('#3498db');
+        
+        // Enhanced batsman with better proportions and colors
         this.ctx.save();
-        this.ctx.translate(this.x, this.y - this.h * 0.5);
+        this.ctx.translate(this.x, this.y);
+        
+        // Head with team color
+        const headRadius = this.h * 0.1;
+        const headGradient = this.ctx.createRadialGradient(0, -this.h * 0.8, 0, 0, -this.h * 0.8, headRadius);
+        headGradient.addColorStop(0, '#f1c40f');
+        headGradient.addColorStop(1, '#d3a000');
+        this.ctx.beginPath();
+        this.ctx.arc(0, -this.h * 0.8, headRadius, 0, Math.PI * 2);
+        this.ctx.fillStyle = headGradient;
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#333';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+        
+        // Body with cricket jersey
+        const bodyGradient = this.ctx.createLinearGradient(0, -this.h * 0.7, 0, -this.h * 0.3);
+        bodyGradient.addColorStop(0, '#ffffff');
+        bodyGradient.addColorStop(1, '#888888');
+        this.ctx.strokeStyle = bodyGradient;
+        this.ctx.lineWidth = 4;
+        this.ctx.lineCap = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -this.h * 0.7);
+        this.ctx.lineTo(0, -this.h * 0.3);
+        this.ctx.stroke();
+        
+        // Arms
+        this.ctx.strokeStyle = '#f1c40f';
+        this.ctx.lineWidth = 3;
+        
+        // Left arm
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -this.h * 0.6);
+        this.ctx.lineTo(-this.w * 0.4, -this.h * 0.5);
+        this.ctx.stroke();
+        
+        // Right arm
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -this.h * 0.6);
+        this.ctx.lineTo(this.w * 0.4, -this.h * 0.5);
+        this.ctx.stroke();
+        
+        // Legs
+        this.ctx.strokeStyle = '#2c3e50';
+        this.ctx.lineWidth = 4;
+        
+        // Left leg
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -this.h * 0.3);
+        this.ctx.lineTo(-this.w * 0.2, this.h * 0.1);
+        this.ctx.stroke();
+        
+        // Right leg
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -this.h * 0.3);
+        this.ctx.lineTo(this.w * 0.2, this.h * 0.1);
+        this.ctx.stroke();
+        
+        // Bat with enhanced visualization
+        this.ctx.save();
+        this.ctx.translate(0, -this.h * 0.5);
+        
         if (this.swingState > 0) {
             let angle;
             const swingAmount = Math.sin(this.swingState * Math.PI);
             switch (this.swingDirection) {
                 case 'left':
-                    angle = -swingAmount * Math.PI / 2.5;
+                    angle = -swingAmount * Math.PI / 2.2;
                     break;
                 case 'right':
-                    angle = swingAmount * Math.PI / 2.5;
+                    angle = swingAmount * Math.PI / 2.2;
                     break;
                 case 'up':
-                    angle = -swingAmount * Math.PI / 4;
+                    angle = -swingAmount * Math.PI / 3.5;
                     break;
                 case 'down':
-                    angle = swingAmount * Math.PI / 8;
+                    angle = swingAmount * Math.PI / 6;
                     break;
                 default:
                     angle = 0;
             }
             this.ctx.rotate(angle);
         }
-        this.ctx.strokeStyle = '#8B4513';
-        this.ctx.lineWidth = 8;
+        
+        // Enhanced cricket bat with better 3D effect
+        this.ctx.fillStyle = '#8B4513'; // Wood color
+        this.ctx.strokeStyle = '#5D2906'; // Darker wood outline
+        this.ctx.lineWidth = 1;
+        
+        // Bat blade
         this.ctx.beginPath();
         this.ctx.moveTo(0, -10);
-        this.ctx.lineTo(0, 40);
+        this.ctx.lineTo(0, -50);
+        this.ctx.lineTo(8, -50);
+        this.ctx.lineTo(8, -10);
+        this.ctx.closePath();
+        this.ctx.fill();
         this.ctx.stroke();
+        
+        // Bat handle
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -10);
+        this.ctx.lineTo(0, 20);
+        this.ctx.lineTo(4, 20);
+        this.ctx.lineTo(4, -10);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        // Bat tape/kashmir
+        this.ctx.fillStyle = '#1a1a1a';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -35);
+        this.ctx.lineTo(0, -30);
+        this.ctx.lineTo(8, -30);
+        this.ctx.lineTo(8, -35);
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        this.ctx.restore();
         this.ctx.restore();
     }
 }

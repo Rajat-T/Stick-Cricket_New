@@ -107,32 +107,84 @@ class Wickets {
     draw() {
         this.ctx.save();
         this.ctx.translate(this.x, this.y);
-        this.ctx.strokeStyle = '#D2B48C';
-        this.ctx.lineWidth = 4;
+        
+        // Draw pitch line under wickets
+        this.ctx.strokeStyle = '#FFFFFF';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-this.width, 0);
+        this.ctx.lineTo(this.width, 0);
+        this.ctx.stroke();
+        
+        // Enhanced stumps with better 3D effect and realistic wood texture
         this.stumps.forEach(stump => {
             this.ctx.save();
             this.ctx.translate(stump.x, stump.y);
             this.ctx.rotate(stump.angle);
-            const stumpGrad = this.ctx.createLinearGradient(-3, 0, 3, 0);
-            stumpGrad.addColorStop(0, '#8B4513');
-            stumpGrad.addColorStop(0.5, '#D2B48C');
-            stumpGrad.addColorStop(1, '#8B4513');
+            
+            // Create more realistic wood texture for stumps
+            const stumpGrad = this.ctx.createLinearGradient(-4, -this.height, 4, 0);
+            stumpGrad.addColorStop(0, '#5D2906');    // Dark wood
+            stumpGrad.addColorStop(0.3, '#8B4513');  // Medium wood
+            stumpGrad.addColorStop(0.7, '#A0522D');  // Light wood
+            stumpGrad.addColorStop(1, '#5D2906');    // Dark wood
+            
             this.ctx.fillStyle = stumpGrad;
-            this.ctx.fillRect(-3, -this.height, 6, this.height);
+            this.ctx.strokeStyle = '#3E1C04'; // Dark outline
+            this.ctx.lineWidth = 1;
+            
+            // Draw stump with rounded top for realism
+            this.ctx.beginPath();
+            this.ctx.moveTo(-3, -this.height);
+            this.ctx.lineTo(-3, 0);
+            this.ctx.lineTo(3, 0);
+            this.ctx.lineTo(3, -this.height);
+            this.ctx.arc(0, -this.height - 3, 3, 0, Math.PI, true);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+            
             this.ctx.restore();
         });
-        this.ctx.strokeStyle = '#A0522D';
-        this.ctx.lineWidth = 3;
+        
+        // Enhanced bails with better 3D effect
         this.bails.forEach(bail => {
             this.ctx.save();
             this.ctx.translate(bail.x, bail.y);
             this.ctx.rotate(bail.angle);
+            
+            // Create metallic look for bails
+            const bailGrad = this.ctx.createLinearGradient(-this.width / 4, -2, this.width / 4, 2);
+            bailGrad.addColorStop(0, '#C0C0C0');  // Silver
+            bailGrad.addColorStop(0.5, '#FFFFFF'); // Bright center
+            bailGrad.addColorStop(1, '#C0C0C0');  // Silver
+            
+            this.ctx.strokeStyle = bailGrad;
+            this.ctx.lineWidth = 4;
+            this.ctx.lineCap = 'round';
+            
             this.ctx.beginPath();
             this.ctx.moveTo(-this.width / 4, 0);
             this.ctx.lineTo(this.width / 4, 0);
             this.ctx.stroke();
+            
+            // Add highlight to bails
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(-this.width / 4 + 2, -1);
+            this.ctx.lineTo(this.width / 4 - 2, -1);
+            this.ctx.stroke();
+            
             this.ctx.restore();
         });
+        
+        // Add subtle shadow under wickets
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, 5, this.width, 8, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        
         this.ctx.restore();
     }
 }

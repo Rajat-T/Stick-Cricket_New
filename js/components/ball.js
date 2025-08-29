@@ -499,21 +499,87 @@ class Ball {
         const H = this.ctx.canvas.height;
         const scale = 0.5 + (this.pos.y / H);
         const shadowRadius = 5 * scale;
+        
+        // Draw shadow with better blur effect
         this.ctx.beginPath();
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         this.ctx.ellipse(this.pos.x, this.pos.y + 10, shadowRadius, shadowRadius / 2, 0, 0, Math.PI * 2);
         this.ctx.fill();
-        const ballGradient = this.ctx.createRadialGradient(this.pos.x, this.pos.y - this.pos.z, 0, this.pos.x, this.pos.y - this.pos.z, 5 * scale);
-        ballGradient.addColorStop(0, '#ffffff');
-        ballGradient.addColorStop(1, '#aaaaaa');
+        
+        // Enhanced 3D ball with better lighting and texture
+        const ballX = this.pos.x;
+        const ballY = this.pos.y - this.pos.z;
+        const ballRadius = 5 * scale;
+        
+        // Create a more realistic cricket ball with leather texture
+        const ballGradient = this.ctx.createRadialGradient(
+            ballX - ballRadius * 0.3, 
+            ballY - ballRadius * 0.3, 
+            0, 
+            ballX, 
+            ballY, 
+            ballRadius
+        );
+        
+        // Cricket ball colors - red with subtle variations
+        ballGradient.addColorStop(0, '#FF4136');  // Brighter red center
+        ballGradient.addColorStop(0.7, '#CC2E29'); // Main red
+        ballGradient.addColorStop(1, '#A61A15');   // Darker edges
+        
         this.ctx.beginPath();
         this.ctx.fillStyle = ballGradient;
-        this.ctx.arc(this.pos.x, this.pos.y - this.pos.z, 5 * scale, 0, Math.PI * 2);
+        this.ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
         this.ctx.fill();
-        this.ctx.strokeStyle = '#FF0000';
-        this.ctx.lineWidth = 1;
+        
+        // Add cricket ball stitching with better visibility
+        this.ctx.strokeStyle = '#111111';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.lineCap = 'round';
+        
+        // Draw the characteristic cricket ball seam pattern
         this.ctx.beginPath();
-        this.ctx.ellipse(this.pos.x, this.pos.y - this.pos.z, 4 * scale, 2 * scale, Math.PI / 4, 0, Math.PI * 2);
+        this.ctx.ellipse(ballX, ballY, ballRadius * 0.8, ballRadius * 0.3, Math.PI / 4, 0, Math.PI * 2);
         this.ctx.stroke();
+        
+        this.ctx.beginPath();
+        this.ctx.ellipse(ballX, ballY, ballRadius * 0.8, ballRadius * 0.3, -Math.PI / 4, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        // Add highlight for 3D effect
+        const highlightGradient = this.ctx.createRadialGradient(
+            ballX - ballRadius * 0.4, 
+            ballY - ballRadius * 0.4, 
+            0, 
+            ballX - ballRadius * 0.4, 
+            ballY - ballRadius * 0.4, 
+            ballRadius * 0.5
+        );
+        highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        
+        this.ctx.beginPath();
+        this.ctx.fillStyle = highlightGradient;
+        this.ctx.arc(ballX - ballRadius * 0.3, ballY - ballRadius * 0.3, ballRadius * 0.4, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Draw trail for fast balls
+        if (this.type === 'fast' && this.vel.y > 200) {
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            
+            for (let i = 0; i < this.trail.length - 1; i++) {
+                const point = this.trail[i];
+                const nextPoint = this.trail[i + 1];
+                const alpha = i / this.trail.length;
+                
+                this.ctx.globalAlpha = alpha * 0.5;
+                this.ctx.beginPath();
+                this.ctx.moveTo(point.x, point.y - point.z);
+                this.ctx.lineTo(nextPoint.x, nextPoint.y - nextPoint.z);
+                this.ctx.stroke();
+            }
+            this.ctx.globalAlpha = 1.0;
+        }
     }
 }
