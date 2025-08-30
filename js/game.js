@@ -398,83 +398,90 @@ class Game {
             (player.role.includes('Bowler') || player.role.includes('All-rounder'))
         );
 
-        // Get current bowler's stats to determine if this is a new over or continuation
-        const currentBowlerStats = this.bowlerStats.find(b => b.name === this.currentBowler?.name);
-        const currentBowlerBalls = currentBowlerStats?.balls || 0;
-        const isNewOver = this.balls % 6 === 0 && this.balls > 0; // New over if we just completed 6 balls
-
-        // Debug logging for bowling restrictions
-        if (isNewOver) {
-            console.log(`--- New Over Starting ---`);
-            console.log(`Current bowler: ${this.currentBowler?.name}`);
-            console.log(`Previous over bowler: ${this.previousOverBowler?.name}`);
-            console.log(`Balls bowled: ${this.balls}`);
+        // Determine if we're starting a new over
+        // A new over starts when we have no current bowler (game start) OR when we just completed 6 balls
+        const isNewOver = !this.currentBowler || (this.balls % 6 === 0 && this.balls > 0);
+        
+        // CRITICAL FIX: Only select/change bowler at the start of a new over
+        // During an over (balls 1-5 of any 6-ball sequence), keep the same bowler
+        if (!isNewOver) {
+            // We're in the middle of an over - keep current bowler, no changes allowed
+            return;
         }
 
-        // Only change bowler if:
-        // 1. No current bowler (game start) OR
-        // 2. Starting a new over (after completing 6 balls)
-        if (!this.currentBowler || isNewOver) {
-            if (eligibleBowlers.length === 0) {
-                this.currentBowler = this.oppositionTeam.players[0];
-            } else {
-                // Apply cricket bowling restrictions
-                let availableBowlers = [...eligibleBowlers];
-                
-                // RULE 1: No consecutive overs - exclude previous over's bowler
-                // Only apply this rule when we're starting a new over (not at game start)
-                if (this.previousOverBowler && isNewOver) {
-                    const beforeFilter = availableBowlers.length;
-                    availableBowlers = availableBowlers.filter(b => b.name !== this.previousOverBowler.name);
-                    console.log(`Filtered out previous over bowler: ${this.previousOverBowler.name}. Bowlers before: ${beforeFilter}, after: ${availableBowlers.length}`);
+        // Debug logging for bowling restrictions
+        console.log(`--- New Over Starting ---`);
+        console.log(`Current bowler: ${this.currentBowler?.name}`);
+        console.log(`Previous over bowler: ${this.previousOverBowler?.name}`);
+        console.log(`Balls bowled: ${this.balls}`);
+        console.log(`Over progress: ${this.balls % 6}/6`);
+
+        if (eligibleBowlers.length === 0) {
+            this.currentBowler = this.oppositionTeam.players[0];
+        } else {
+            // Apply cricket bowling restrictions
+            let availableBowlers = [...eligibleBowlers];
+            
+            // RULE 1: No consecutive overs - exclude previous over's bowler
+            // Only apply this rule when we have a previous over bowler (not at game start)
+            if (this.previousOverBowler && this.balls > 0) {
+                const beforeFilter = availableBowlers.length;
+                availableBowlers = availableBowlers.filter(b => b.name !== this.previousOverBowler.name);
+                console.log(`Filtered out previous over bowler: ${this.previousOverBowler.name}. Bowlers before: ${beforeFilter}, after: ${availableBowlers.length}`);
+            }
+            
+            // RULE 2: Limited overs restriction (n/5 rule)
+            // In limited overs cricket, a bowler can't bowl more than maxOvers/5 overs
+            if (this.maxOvers && this.maxOvers > 0) {
+                const maxOversPerBowler = Math.floor(this.maxOvers / 5);
+                if (maxOversPerBowler > 0) {
+                    availableBowlers = availableBowlers.filter(bowler => {
+                        const bowlerStat = this.bowlerStats.find(b => b.name === bowler.name);
+                        const bowlerOvers = bowlerStat ? Math.floor(bowlerStat.balls / 6) : 0;
+                        return bowlerOvers < maxOversPerBowler;
+                    });
                 }
-                
-                // RULE 2: Limited overs restriction (n/5 rule)
-                // In limited overs cricket, a bowler can't bowl more than maxOvers/5 overs
+            }
+            
+            // If no bowlers available after restrictions, relax rules progressively
+            if (availableBowlers.length === 0) {
+                console.log('No bowlers available after restrictions, relaxing rules...');
+                // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
+                availableBowlers = [...eligibleBowlers];
                 if (this.maxOvers && this.maxOvers > 0) {
                     const maxOversPerBowler = Math.floor(this.maxOvers / 5);
                     if (maxOversPerBowler > 0) {
-                        availableBowlers = availableBowlers.filter(bowler => {
+                        const limitedBowlers = availableBowlers.filter(bowler => {
                             const bowlerStat = this.bowlerStats.find(b => b.name === bowler.name);
                             const bowlerOvers = bowlerStat ? Math.floor(bowlerStat.balls / 6) : 0;
                             return bowlerOvers < maxOversPerBowler;
                         });
-                    }
-                }
-                
-                // If no bowlers available after restrictions, relax rules progressively
-                if (availableBowlers.length === 0) {
-                    console.log('No bowlers available after restrictions, relaxing rules...');
-                    // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
-                    availableBowlers = [...eligibleBowlers];
-                    if (this.maxOvers && this.maxOvers > 0) {
-                        const maxOversPerBowler = Math.floor(this.maxOvers / 5);
-                        if (maxOversPerBowler > 0) {
-                            const limitedBowlers = availableBowlers.filter(bowler => {
-                                const bowlerStat = this.bowlerStats.find(b => b.name === bowler.name);
-                                const bowlerOvers = bowlerStat ? Math.floor(bowlerStat.balls / 6) : 0;
-                                return bowlerOvers < maxOversPerBowler;
-                            });
-                            if (limitedBowlers.length > 0) {
-                                availableBowlers = limitedBowlers;
-                            }
+                        if (limitedBowlers.length > 0) {
+                            availableBowlers = limitedBowlers;
                         }
                     }
                 }
-                
-                // Select a random bowler from available options
-                const newBowler = availableBowlers[Math.floor(Math.random() * availableBowlers.length)];
-                console.log(`Selected new bowler: ${newBowler.name}`);
-                this.currentBowler = newBowler;
             }
-
-            this.bowlerNameEl.textContent = this.currentBowler.name;
-            this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
-            this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
-            this.bowlerTeamEl.style.color = this.oppositionTeam.secondaryColor;
+            
+            // Select a random bowler from available options
+            const newBowler = availableBowlers[Math.floor(Math.random() * availableBowlers.length)];
+            console.log(`Selected new bowler: ${newBowler.name}`);
+            this.currentBowler = newBowler;
         }
+
+        // Update UI with current bowler information
+        this.bowlerNameEl.textContent = this.currentBowler.name;
+        this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
+        this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
+        this.bowlerTeamEl.style.color = this.oppositionTeam.secondaryColor;
     }
     updateBowlerStats(runs = 0, isWicket = false) {
+        // Only update stats for the current bowler who is actually bowling this ball
+        if (!this.currentBowler) {
+            console.warn('No current bowler set - cannot update bowling stats');
+            return;
+        }
+        
         const bowlerName = this.currentBowler.name;
         let bowlerStat = this.bowlerStats.find(b => b.name === bowlerName);
 
@@ -488,9 +495,12 @@ class Game {
             this.bowlerStats.push(bowlerStat);
         }
 
+        // Update stats only for the current bowler
         bowlerStat.runs += runs;
         bowlerStat.balls++;
         if (isWicket) bowlerStat.wickets++;
+        
+        console.log(`Updated ${bowlerName} stats: ${bowlerStat.balls} balls, ${bowlerStat.runs} runs, ${bowlerStat.wickets} wickets`);
     }
     showScorecard() {
         this.gameLoopPaused = true;
@@ -528,14 +538,37 @@ class Game {
         const bowlingBody = document.getElementById('bowlingScorecardBody');
         bowlingBody.innerHTML = '';
 
-        this.bowlerStats.forEach(stat => {
-            const overs = Math.floor(stat.balls / 6) + '.' + (stat.balls % 6);
-            const economy = stat.balls > 0 ? (stat.runs / (stat.balls / 6)).toFixed(2) : '0.00';
+        // Only show bowlers who have bowled at least one ball
+        // Filter out bowlers with 0 balls to avoid empty entries
+        const activeBowlers = this.bowlerStats.filter(stat => stat.balls > 0);
+        
+        activeBowlers.forEach(stat => {
+            // Calculate overs: complete overs + remaining balls
+            const completeOvers = Math.floor(stat.balls / 6);
+            const remainingBalls = stat.balls % 6;
+            
+            // Display overs properly: if remaining balls = 0, show just complete overs
+            // If remaining balls > 0, show complete.remaining format
+            let oversDisplay;
+            if (remainingBalls === 0 && completeOvers > 0) {
+                oversDisplay = completeOvers.toString();
+            } else {
+                oversDisplay = completeOvers + '.' + remainingBalls;
+            }
+            
+            // Calculate economy rate only if bowler has bowled at least 6 balls (1 over)
+            let economy;
+            if (stat.balls >= 6) {
+                economy = (stat.runs / (stat.balls / 6)).toFixed(2);
+            } else {
+                // For partial overs, show economy as runs per ball * 6
+                economy = remainingBalls > 0 ? ((stat.runs / remainingBalls) * 6).toFixed(2) : '0.00';
+            }
 
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${stat.name}</td>
-                <td>${overs}</td>
+                <td>${oversDisplay}</td>
                 <td>${stat.runs}</td>
                 <td>${stat.wickets}</td>
                 <td>${economy}</td>
@@ -815,10 +848,10 @@ class Game {
             this.ball.isActive = false;
             this.showFeedback('0 · Miss', '#FFA500');
             this.recordBallOutcome(0);
+            // Credit the dot ball to the correct bowler BEFORE potential over change
+            this.updateBowlerStats(0);
             this.incrementBall();
             this.updateScoreboard();
-            // FIX: Update bowler stats for dot balls
-            this.updateBowlerStats(0);
             this.gameState = 'between_balls';
             this.awaitingNextBall = true;
             setTimeout(() => this.nextBall(), 1500);
@@ -833,11 +866,12 @@ class Game {
         this.wicketsTaken++;
         this.updateBatsmanStats('wicket', type, runsScoredOnWicket);
         this.recordBallOutcome('W');
+        // Credit the wicket ball to the correct bowler BEFORE potential over change
+        this.updateBowlerStats(runsScoredOnWicket, true);
         this.incrementBall();
         this.updateScoreboard();
         this.showFeedback(`0 · ${type}`, '#FF4136');
         this.ball.isActive = false;
-        this.updateBowlerStats(runsScoredOnWicket, true);
         this.gameState = 'between_balls';
 
         // 3. Create celebration particles for wicket
