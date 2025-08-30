@@ -773,7 +773,8 @@ class Game {
             
             const isMishit = result.timingScore < 2;
             const isLofted = this.ball.vel.z > 40;
-            const isCaught = isMishit && isLofted && Math.random() < 0.15; // Lower mishit catch probability
+            const mishitCatchProb = window.GameTuning?.catches?.mishitLoftedProb ?? 0.15;
+            const isCaught = isMishit && isLofted && Math.random() < mishitCatchProb;
             
             if (isCaught) {
                 this.handleWicket('Caught!', result.runs);

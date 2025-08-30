@@ -165,10 +165,13 @@ class Wickets {
         
         // Check if ball is at ground level and within wicket bounds
         const isAtGroundLevel = ball.pos.z <= ballRadius + 2; // Small tolerance for ground contact
-        const isInHorizontalRange = ball.pos.x > this.x - this.width / 2 - ballRadius && 
-                                   ball.pos.x < this.x + this.width / 2 + ballRadius;
-        const isInDepthRange = ball.pos.y > this.y - ballRadius - wicketDepth && 
-                              ball.pos.y < this.y + ballRadius;
+        // Slightly stricter horizontal and depth windows to avoid phantom bowled (configurable)
+        const marginX = ballRadius * (window.GameTuning?.wickets?.marginXBallRadiusFactor ?? 0.5);
+        const isInHorizontalRange = ball.pos.x > this.x - this.width / 2 - marginX &&
+                                   ball.pos.x < this.x + this.width / 2 + marginX;
+        const depthTop = ballRadius * (window.GameTuning?.wickets?.depthTopPaddingBallRadiusFactor ?? 0.6);
+        const isInDepthRange = ball.pos.y > this.y - wicketDepth &&
+                              ball.pos.y < this.y + depthTop;
         
         // Ball must be moving towards or past the wickets
         const isMovingTowardsWickets = !ball.isHit && ball.vel.y > 0;
