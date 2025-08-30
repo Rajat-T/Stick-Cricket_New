@@ -62,47 +62,118 @@ class Wickets {
         }
         ];
     }
-    hit() {
+    hit(ballVelocity = null, bowlerStyle = null) {
         if (this.isHit) return;
         this.isHit = true;
-        this.stumps.forEach(stump => {
+        
+        // Enhanced wicket physics based on ball velocity and bowler type
+        const ballSpeed = ballVelocity ? Math.hypot(ballVelocity.x, ballVelocity.y, ballVelocity.z) : 200;
+        const impactForce = Math.min(ballSpeed / 100, 4); // Scale impact force
+        
+        // Determine wicket falling pattern based on bowler style
+        let forceMultiplier = 1.0;
+        let spreadFactor = 1.0;
+        
+        if (bowlerStyle === 'Fast') {
+            // Fast bowlers create explosive wicket destruction
+            forceMultiplier = 1.8;
+            spreadFactor = 1.5;
+        } else if (bowlerStyle === 'Fast Medium') {
+            // Moderate but decisive wicket falling
+            forceMultiplier = 1.3;
+            spreadFactor = 1.2;
+        } else if (bowlerStyle === 'Spin') {
+            // Spin bowlers cause more gentle but precise wicket fall
+            forceMultiplier = 0.9;
+            spreadFactor = 0.8;
+        }
+        
+        // Apply physics to stumps with enhanced realism
+        this.stumps.forEach((stump, index) => {
+            const baseForce = 150 * impactForce * forceMultiplier;
+            const lateralSpread = 100 * spreadFactor;
+            
             stump.vel = {
-                x: (Math.random() - 0.5) * 200,
-                y: (Math.random() - 0.5) * 100 - 50
+                x: (Math.random() - 0.5) * lateralSpread + (index - 1) * 50,
+                y: (Math.random() - 0.5) * baseForce * 0.3 - 30
             };
-            stump.angleVel = (Math.random() - 0.5) * 10;
+            stump.angleVel = (Math.random() - 0.5) * 15 * forceMultiplier;
         });
-        this.bails.forEach(bail => {
+        
+        // Apply enhanced physics to bails
+        this.bails.forEach((bail, index) => {
+            const bailForce = 200 * impactForce * forceMultiplier;
+            const bailSpread = 120 * spreadFactor;
+            
             bail.vel = {
-                x: (Math.random() - 0.5) * 300,
-                y: (Math.random() - 0.5) * 200 - 100
+                x: (Math.random() - 0.5) * bailSpread + (index === 0 ? -40 : 40),
+                y: (Math.random() - 0.5) * bailForce * 0.5 - 80
             };
-            bail.angleVel = (Math.random() - 0.5) * 20;
+            bail.angleVel = (Math.random() - 0.5) * 25 * forceMultiplier;
         });
     }
     update(dt) {
         if (!this.isHit) return;
+        
+        // Enhanced physics with gravity and friction
+        const gravity = 980; // Gravity acceleration
+        const friction = 0.85; // Ground friction coefficient
+        const bounceDamping = 0.6; // Energy loss on bounce
+        
         this.stumps.forEach(stump => {
+            // Apply gravity to vertical velocity
+            stump.vel.y += gravity * dt;
+            
+            // Update position
             stump.x += stump.vel.x * dt;
             stump.y += stump.vel.y * dt;
             stump.angle += stump.angleVel * dt;
+            
+            // Ground collision with realistic physics
+            if (stump.y > 0) {
+                stump.y = 0;
+                stump.vel.y = -stump.vel.y * bounceDamping; // Bounce with energy loss
+                stump.vel.x *= friction; // Apply friction
+                stump.angleVel *= friction; // Reduce rotation
+            }
         });
+        
         this.bails.forEach(bail => {
+            // Apply gravity
+            bail.vel.y += gravity * dt;
+            
+            // Update position
             bail.x += bail.vel.x * dt;
             bail.y += bail.vel.y * dt;
             bail.angle += bail.angleVel * dt;
+            
+            // Ground collision
+            if (bail.y > 0) {
+                bail.y = 0;
+                bail.vel.y = -bail.vel.y * bounceDamping;
+                bail.vel.x *= friction;
+                bail.angleVel *= friction;
+            }
         });
     }
     checkCollision(ball) {
         if (this.isHit) return false;
+        
+        // Enhanced collision detection with 3D ball position
         const ballRadius = 5;
-        return (
-            !ball.isHit &&
-            ball.pos.z <= 5 &&
-            ball.pos.x > this.x - this.width / 2 - ballRadius &&
-            ball.pos.x < this.x + this.width / 2 + ballRadius &&
-            ball.pos.y > this.y - ballRadius
-        );
+        const wicketDepth = 8; // Account for wicket depth
+        
+        // Check if ball is at ground level and within wicket bounds
+        const isAtGroundLevel = ball.pos.z <= ballRadius + 2; // Small tolerance for ground contact
+        const isInHorizontalRange = ball.pos.x > this.x - this.width / 2 - ballRadius && 
+                                   ball.pos.x < this.x + this.width / 2 + ballRadius;
+        const isInDepthRange = ball.pos.y > this.y - ballRadius - wicketDepth && 
+                              ball.pos.y < this.y + ballRadius;
+        
+        // Ball must be moving towards or past the wickets
+        const isMovingTowardsWickets = !ball.isHit && ball.vel.y > 0;
+        
+        return isAtGroundLevel && isInHorizontalRange && isInDepthRange && isMovingTowardsWickets;
     }
     draw() {
         this.ctx.save();

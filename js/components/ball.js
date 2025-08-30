@@ -303,42 +303,93 @@ class Ball {
         const intendedSide = (this.pos.x < W / 2) ? "left" : "right";
         const directionOK = (swingDirection === intendedSide) || (swingDirection === "up") || (swingDirection === "down");
         
-        // Check for edge catches based on timing and direction
+        // Enhanced edge detection with bowler-specific characteristics
         let isEdged = false;
         if (!directionOK || timingScore === 0) {
-            const edgeChance = this.edgeRisk * (directionOK ? 1 : 2) * (timingScore === 0 ? 3 : 1);
+            // Calculate bowler-specific edge risk multipliers
+            let bowlerEdgeMultiplier = 1.0;
+            
+            if (this.bowlingStyle === 'Fast') {
+                // Fast bowlers more likely to generate edges due to pace and swing
+                bowlerEdgeMultiplier = 1.6;
+                if (this.type === 'fast' && this.surpriseDelivery) {
+                    bowlerEdgeMultiplier = 2.2; // Slower ball surprise factor
+                }
+            } else if (this.bowlingStyle === 'Fast Medium') {
+                // Moderate edge generation
+                bowlerEdgeMultiplier = 1.2;
+            } else if (this.bowlingStyle === 'Spin') {
+                // Spin bowlers less likely to generate edges, but can get catches
+                bowlerEdgeMultiplier = 0.7;
+                if (this.spinRate > 3.0) {
+                    bowlerEdgeMultiplier = 1.0; // High spin can deceive
+                }
+            }
+            
+            const edgeChance = this.edgeRisk * bowlerEdgeMultiplier * 
+                              (directionOK ? 1 : 2) * 
+                              (timingScore === 0 ? 3 : 1);
+            
             if (Math.random() < edgeChance) {
                 isEdged = true;
-                return { timing: "EDGED!", runs: 0, color: "#FF4136", timingScore: 0, dismissal: "Caught" };
+                const dismissalType = this.bowlingStyle === 'Fast' ? 'Caught Behind' : 'Caught';
+                return { 
+                    timing: "EDGED!", 
+                    runs: 0, 
+                    color: "#FF4136", 
+                    timingScore: 0, 
+                    dismissal: dismissalType,
+                    bowlerStyle: this.bowlingStyle
+                };
             }
         }
         
-        // Check for LBW based on proper cricket rules
+        // Enhanced LBW system based on bowler type and proper cricket rules
         if (!isEdged && this.lbwRisk > 0) {
-            // LBW conditions:
-            // 1. Ball must hit body first (simulated by poor timing or missing the shot)
-            // 2. Must be playing a shot that misses the ball
-            // 3. Ball must be going on to hit stumps (already calculated in lbwRisk)
-            
             let lbwChance = 0;
+            let bowlerLBWMultiplier = 1.0;
             
-            // Much more conservative LBW chances
-            // Increase LBW chance if:
-            // - Very poor timing (ball hits pad instead of bat)
-            // - Wrong shot selection for ball line
+            // Bowler-specific LBW characteristics
+            if (this.bowlingStyle === 'Fast') {
+                // Fast bowlers less likely to get LBW (ball travels too fast, high bounce)
+                bowlerLBWMultiplier = 0.6;
+            } else if (this.bowlingStyle === 'Fast Medium') {
+                // Good pace for LBW decisions
+                bowlerLBWMultiplier = 1.0;
+            } else if (this.bowlingStyle === 'Spin') {
+                // Spin bowlers more likely to get LBW due to slower pace and turn
+                bowlerLBWMultiplier = 1.4;
+                if (this.spinRate > 3.5) {
+                    bowlerLBWMultiplier = 1.8; // High spin increases LBW chances
+                }
+            }
+            
+            // Calculate LBW chance based on timing and shot selection
             if (timingScore === 0) {
-                lbwChance = this.lbwRisk * 2.5; // Reduced from 4
+                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 2.5; // Very poor timing
             } else if (!directionOK && timingScore === 1) {
-                lbwChance = this.lbwRisk * 1.2; // Reduced from 2
+                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 1.2; // Wrong shot selection
+            }
+            
+            // Defensive shots are much safer from LBW
+            if (swingDirection === "down") {
+                lbwChance *= 0.05; // Defensive shots greatly reduce LBW risk
             }
             
             // Very small chance of LBW even with decent timing if ball is very straight
             if (timingScore >= 2 && this.lbwRisk > 0.05) {
-                lbwChance = this.lbwRisk * 0.2; // Reduced from 0.5
+                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 0.2;
             }
             
             if (Math.random() < lbwChance) {
-                return { timing: "LBW!", runs: 0, color: "#FF4136", timingScore: 0, dismissal: "LBW" };
+                return { 
+                    timing: "LBW!", 
+                    runs: 0, 
+                    color: "#FF4136", 
+                    timingScore: 0, 
+                    dismissal: "LBW",
+                    bowlerStyle: this.bowlingStyle
+                };
             }
         }
         
@@ -362,7 +413,7 @@ class Ball {
         else angle = (swingDirection === "left" ? Math.PI * 1.25 : Math.PI * 1.75) + (Math.random() - 0.5) * 0.3;
         
         const incomingVec = { x: this.vel.x, y: this.vel.y, z: this.vel.z };
-        const batSpeed = 400 * power; // Increased base bat speed
+        const batSpeed = 450 * power; // Enhanced bat speed for better shot power
         const batVel = {
             x: Math.cos(angle) * batSpeed,
             y: Math.sin(angle) * batSpeed
@@ -376,27 +427,61 @@ class Ball {
         this.vel.y = (1 + e) * batVel.y - e * incomingVec.y;
         this.vel.z = Math.max(0, (1 + e) * batVel.z - e * incomingVec.z);
         
-        // Enhanced run calculation with more realistic thresholds
+        // Enhanced 4s and 6s system with realistic timing requirements
         let runs = 0;
         const postSpeed = Math.hypot(this.vel.x, this.vel.y);
+        const totalVelocity = Math.hypot(this.vel.x, this.vel.y, this.vel.z); // Include loft velocity
         
         if (shotType === "defensive") {
             runs = Math.random() < 0.15 ? 1 : 0;
-        } else if (postSpeed > 500 && timingScore >= 2) {
-            runs = 6;
-        } else if (postSpeed > 380 && timingScore >= 2) {
-            runs = 4;
-        } else if (postSpeed > 250) {
-            runs = (Math.random() < 0.7) ? 2 : 1;
-        } else if (postSpeed > 150) {
-            runs = Math.random() < 0.6 ? 1 : 0;
         } else {
-            runs = 0;
+            // 6s: Only achievable with PERFECT timing (sweet spot connection)
+            if (timing === "PERFECT!" && timingScore === 3) {
+                if (totalVelocity > 650 && this.vel.z > 80) { // High loft and speed
+                    runs = 6;
+                } else if (postSpeed > 520) { // Excellent timing along ground
+                    runs = 4;
+                } else if (postSpeed > 320) {
+                    runs = Math.random() < 0.8 ? 2 : 3;
+                } else if (postSpeed > 180) {
+                    runs = Math.random() < 0.7 ? 1 : 2;
+                } else {
+                    runs = 1;
+                }
+            }
+            // 4s: Achievable with GOOD or PERFECT timing
+            else if (timingScore >= 2) { // GOOD or PERFECT
+                if (postSpeed > 480 && (this.vel.z > 40 || postSpeed > 550)) {
+                    runs = 4;
+                } else if (postSpeed > 350) {
+                    runs = Math.random() < 0.8 ? 2 : 3;
+                } else if (postSpeed > 220) {
+                    runs = Math.random() < 0.75 ? 2 : 1;
+                } else if (postSpeed > 140) {
+                    runs = Math.random() < 0.6 ? 1 : 0;
+                } else {
+                    runs = 0;
+                }
+            }
+            // Singles and doubles for moderate timing
+            else if (timingScore === 1) { // EARLY or LATE
+                if (postSpeed > 280) {
+                    runs = Math.random() < 0.6 ? 2 : 1;
+                } else if (postSpeed > 160) {
+                    runs = Math.random() < 0.5 ? 1 : 0;
+                } else {
+                    runs = 0;
+                }
+            }
+            // Very poor timing - mostly dots
+            else { // timingScore === 0
+                runs = postSpeed > 200 ? (Math.random() < 0.2 ? 1 : 0) : 0;
+            }
         }
         
-        // Bonus runs for perfect timing
-        if (timing === "PERFECT!" && runs > 0) {
-            runs = Math.min(6, runs + (Math.random() < 0.3 ? 1 : 0));
+        // Extra power bonus for perfect connection
+        if (timing === "PERFECT!" && runs > 0 && Math.random() < 0.15) {
+            runs = Math.min(6, runs + 1); // Small chance to upgrade score
         }
         
         return { timing, runs, color, timingScore };

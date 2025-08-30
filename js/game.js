@@ -840,7 +840,15 @@ class Game {
     }
     onBallMissed() {
         if (this.ball.pos.z <= 5 && this.wicketsObject.checkCollision(this.ball)) {
-            this.wicketsObject.hit();
+            // Pass ball velocity and bowler style to wickets for enhanced physics
+            const ballVelocity = {
+                x: this.ball.vel.x,
+                y: this.ball.vel.y,
+                z: this.ball.vel.z
+            };
+            const bowlerStyle = this.currentBowler?.bowlingStyle || this.ball.bowlingStyle || 'Fast Medium';
+            
+            this.wicketsObject.hit(ballVelocity, bowlerStyle);
             this.handleWicket('Bowled!', 0);
             return;
         }
