@@ -773,7 +773,7 @@ class Game {
             
             const isMishit = result.timingScore < 2;
             const isLofted = this.ball.vel.z > 40;
-            const isCaught = isMishit && isLofted && Math.random() < 0.25; // Reduced catch probability since we now have edge catches
+            const isCaught = isMishit && isLofted && Math.random() < 0.15; // Lower mishit catch probability
             
             if (isCaught) {
                 this.handleWicket('Caught!', result.runs);

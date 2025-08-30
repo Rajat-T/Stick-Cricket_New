@@ -277,7 +277,7 @@ class Ball {
         
         // Enhanced timing window calculation with difficulty scaling
         const difficultyLevel = this.difficulty?.name || 'pro';
-        let baseTimingWindow = 22;
+        let baseTimingWindow = 26; // Slightly wider to reduce cheap wickets
         
         // Adjust base timing window for surprise deliveries
         if (this.surpriseDelivery) {
@@ -318,39 +318,55 @@ class Ball {
         if (!directionOK || timingScore === 0) {
             // Calculate bowler-specific edge risk multipliers
             let bowlerEdgeMultiplier = 1.0;
-            
+
             if (this.bowlingStyle === 'Fast') {
                 // Fast bowlers more likely to generate edges due to pace and swing
-                bowlerEdgeMultiplier = 1.6;
+                bowlerEdgeMultiplier = 1.2;
                 if (this.type === 'fast' && this.surpriseDelivery) {
-                    bowlerEdgeMultiplier = 2.2; // Slower ball surprise factor
+                    bowlerEdgeMultiplier = 1.6; // Slower ball surprise factor
                 }
             } else if (this.bowlingStyle === 'Fast Medium') {
                 // Moderate edge generation
-                bowlerEdgeMultiplier = 1.2;
+                bowlerEdgeMultiplier = 1.1;
             } else if (this.bowlingStyle === 'Spin') {
                 // Spin bowlers less likely to generate edges, but can get catches
-                bowlerEdgeMultiplier = 0.7;
+                bowlerEdgeMultiplier = 0.6;
                 if (this.spinRate > 3.0) {
-                    bowlerEdgeMultiplier = 1.0; // High spin can deceive
+                    bowlerEdgeMultiplier = 0.9; // High spin can deceive
                 }
             }
-            
-            const edgeChance = this.edgeRisk * bowlerEdgeMultiplier * 
-                              (directionOK ? 1 : 2) * 
-                              (timingScore === 0 ? 3 : 1);
-            
+
+            let edgeChance = this.edgeRisk * bowlerEdgeMultiplier *
+                              (directionOK ? 1.0 : 1.5) *
+                              (timingScore === 0 ? 2.0 : 1.0);
+            // Hard cap to prevent excessive edge dismissals
+            edgeChance = Math.min(edgeChance, 0.25);
+
             if (Math.random() < edgeChance) {
                 isEdged = true;
-                const dismissalType = this.bowlingStyle === 'Fast' ? 'Caught Behind' : 'Caught';
-                return { 
-                    timing: "EDGED!", 
-                    runs: 0, 
-                    color: "#FF4136", 
-                    timingScore: 0, 
-                    dismissal: dismissalType,
-                    bowlerStyle: this.bowlingStyle
-                };
+                // Not every edge is out. Favor play-and-miss or streaky runs.
+                const wicketEdgeChance = (this.bowlingStyle === 'Fast') ? 0.45 :
+                                          (this.bowlingStyle === 'Fast Medium') ? 0.35 : 0.25;
+                if (Math.random() < wicketEdgeChance) {
+                    const dismissalType = this.bowlingStyle === 'Fast' ? 'Caught Behind' : 'Caught';
+                    return {
+                        timing: "EDGED!",
+                        runs: 0,
+                        color: "#FF4136",
+                        timingScore: 0,
+                        dismissal: dismissalType,
+                        bowlerStyle: this.bowlingStyle
+                    };
+                } else {
+                    // Edge not carried: treat as dot or a scrappy single
+                    const scrappyRuns = Math.random() < 0.2 ? 1 : 0;
+                    return {
+                        timing: "EDGED!",
+                        runs: scrappyRuns,
+                        color: "#FF851B",
+                        timingScore: 0
+                    };
+                }
             }
         }
         
@@ -362,23 +378,23 @@ class Ball {
             // Bowler-specific LBW characteristics
             if (this.bowlingStyle === 'Fast') {
                 // Fast bowlers less likely to get LBW (ball travels too fast, high bounce)
-                bowlerLBWMultiplier = 0.6;
+                bowlerLBWMultiplier = 0.4;
             } else if (this.bowlingStyle === 'Fast Medium') {
                 // Good pace for LBW decisions
-                bowlerLBWMultiplier = 1.0;
+                bowlerLBWMultiplier = 0.9;
             } else if (this.bowlingStyle === 'Spin') {
                 // Spin bowlers more likely to get LBW due to slower pace and turn
-                bowlerLBWMultiplier = 1.4;
+                bowlerLBWMultiplier = 1.2;
                 if (this.spinRate > 3.5) {
-                    bowlerLBWMultiplier = 1.8; // High spin increases LBW chances
+                    bowlerLBWMultiplier = 1.4; // High spin increases LBW chances
                 }
             }
             
             // Calculate LBW chance based on timing and shot selection
             if (timingScore === 0) {
-                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 2.5; // Very poor timing
+                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 1.8; // Very poor timing
             } else if (!directionOK && timingScore === 1) {
-                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 1.2; // Wrong shot selection
+                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 0.9; // Wrong shot selection
             }
             
             // Defensive shots are much safer from LBW
@@ -388,8 +404,10 @@ class Ball {
             
             // Very small chance of LBW even with decent timing if ball is very straight
             if (timingScore >= 2 && this.lbwRisk > 0.05) {
-                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 0.2;
+                lbwChance = this.lbwRisk * bowlerLBWMultiplier * 0.05;
             }
+            // Cap LBW chance so it rarely feels unfair
+            lbwChance = Math.min(lbwChance, 0.18);
             
             if (Math.random() < lbwChance) {
                 return { 
