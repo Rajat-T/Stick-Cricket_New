@@ -1092,7 +1092,7 @@ class Game {
             // Complete the tournament match regardless of win/loss
             if (this.tournamentManager) {
                 const matchResult = this.tournamentManager.completeUserMatch(
-                    this.score, this.balls, oppositionScore, oppositionBalls
+                    this.score, this.balls, oppositionScore, oppositionBalls, isWin
                 );
                 
                 // Store match result for display

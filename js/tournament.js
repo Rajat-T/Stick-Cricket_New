@@ -360,7 +360,7 @@ class TournamentManager {
         }
     }
 
-    completeUserMatch(userScore, userBalls, oppositionScore, oppositionBalls) {
+    completeUserMatch(userScore, userBalls, oppositionScore, oppositionBalls, userWon) {
         if (!this.currentMatch) {
             return null;
         }
@@ -377,33 +377,53 @@ class TournamentManager {
             team2Score = { runs: userScore, balls: userBalls };
         }
 
-        // Determine winner and loser correctly
+        // Determine winner/loser using provided outcome when available.
+        // Fallback to score comparison if userWon is undefined.
         let winner, loser, winMargin, winType;
-        if (userScore > oppositionScore) {
-            // User wins
-            winner = this.userTeam;
-            loser = oppositionTeam;
-            winMargin = userScore - oppositionScore;
-            winType = 'runs';
-        } else if (oppositionScore > userScore) {
-            // Opposition wins
-            winner = oppositionTeam;
-            loser = this.userTeam;
-            // Calculate wicket margin (simplified - opposition had wickets remaining)
-            const wicketsLeft = 10 - Math.floor(Math.random() * 5);
-            winMargin = wicketsLeft;
-            winType = 'wickets';
-        } else {
-            // Tie - winner decided by fewer balls faced (better run rate)
-            if (userBalls < oppositionBalls) {
+        if (typeof userWon === 'boolean') {
+            if (userWon) {
                 winner = this.userTeam;
                 loser = oppositionTeam;
+                // Prefer a positive, sensible margin. If user's runs exceed opposition, show runs; otherwise show wickets.
+                if (userScore > oppositionScore) {
+                    winMargin = userScore - oppositionScore;
+                    winType = 'runs';
+                } else {
+                    const wicketsLeft = 1 + Math.floor(Math.random() * 6); // 1-6 wickets left
+                    winMargin = wicketsLeft;
+                    winType = 'wickets';
+                }
             } else {
                 winner = oppositionTeam;
                 loser = this.userTeam;
+                // Ensure a non-negative runs margin for a loss
+                winMargin = Math.max(1, oppositionScore - userScore);
+                winType = 'runs';
             }
-            winMargin = Math.abs(userBalls - oppositionBalls);
-            winType = 'balls';
+        } else {
+            // Legacy path: decide purely by runs (may be inaccurate for chases)
+            if (userScore > oppositionScore) {
+                winner = this.userTeam;
+                loser = oppositionTeam;
+                winMargin = userScore - oppositionScore;
+                winType = 'runs';
+            } else if (oppositionScore > userScore) {
+                winner = oppositionTeam;
+                loser = this.userTeam;
+                const wicketsLeft = 10 - Math.floor(Math.random() * 5);
+                winMargin = wicketsLeft;
+                winType = 'wickets';
+            } else {
+                if (userBalls < oppositionBalls) {
+                    winner = this.userTeam;
+                    loser = oppositionTeam;
+                } else {
+                    winner = oppositionTeam;
+                    loser = this.userTeam;
+                }
+                winMargin = Math.abs(userBalls - oppositionBalls);
+                winType = 'balls';
+            }
         }
 
         const matchResult = {
