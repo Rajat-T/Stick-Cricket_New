@@ -31,6 +31,11 @@ class Ball {
         this.spinRate = 0;
         this.dragCoeff = this.AIR_DRAG;
         
+        // Trajectory visualization
+        this.trajectory = [];
+        this.showTrajectory = false;
+        this.trajectoryColor = '#FFFFFF';
+        
         this.reset();
     }
     // Restore ball to an inactive starting state with no motion or swing
@@ -52,6 +57,11 @@ class Ball {
         this.spinRate = 0;
         this.spinDrift = 0;
         this.dragCoeff = this.AIR_DRAG;
+        
+        // Reset trajectory
+        this.trajectory = [];
+        this.showTrajectory = false;
+        this.trajectoryColor = '#FFFFFF';
     }
     bowl(type, side, bowlerType = null, bowlingStyle = null) {
         this.reset();
@@ -484,7 +494,255 @@ class Ball {
             runs = Math.min(6, runs + 1); // Small chance to upgrade score
         }
         
+        // Set trajectory based on shot direction and runs scored
+        if (typeof swingDirection !== 'undefined') {
+            this.setTrajectory(swingDirection, runs);
+        }
+        
         return { timing, runs, color, timingScore };
+    }
+    
+    // Set trajectory visualization based on shot result
+    setTrajectory(direction, runs) {
+        this.showTrajectory = true;
+        this.trajectory = [];
+        
+        // Set color and trajectory characteristics based on runs scored
+        if (runs === 6) {
+            // Six - high trajectory
+            this.trajectoryColor = '#FF4136'; // Red for sixes
+            this.setSixTrajectory(direction);
+        } else if (runs === 4) {
+            // Four - fast grounded trajectory
+            this.trajectoryColor = '#0074D9'; // Blue for fours
+            this.setFourTrajectory(direction);
+        } else if (runs > 0) {
+            // Other runs - slower grounded trajectory
+            this.trajectoryColor = '#01FF70'; // Green for singles, doubles, triples
+            this.setRunTrajectory(direction, runs);
+        } else {
+            // Dot ball or wicket - defensive trajectory
+            this.trajectoryColor = '#FFDC00'; // Yellow for defensive shots
+            this.setDefensiveTrajectory(direction);
+        }
+    }
+    
+    // High trajectory for sixes
+    setSixTrajectory(direction) {
+        const startPos = { x: this.pos.x, y: this.pos.y, z: this.pos.z };
+        let posX = startPos.x;
+        let posY = startPos.y;
+        let posZ = startPos.z;
+        
+        // Adjust velocity based on shot direction
+        let velX = this.vel.x * 0.7; // Reduce horizontal speed
+        let velY = this.vel.y * 0.8; // Reduce forward speed
+        let velZ = this.vel.z * 1.5; // Increase vertical speed for height
+        
+        // Apply direction modifiers
+        switch(direction) {
+            case 'left':
+                velX -= 100; // More leftward
+                break;
+            case 'right':
+                velX += 100; // More rightward
+                break;
+            case 'up':
+                velZ *= 1.2; // Even higher for straight shots
+                break;
+            case 'down':
+                velZ *= 0.5; // Less height for defensive shots
+                break;
+        }
+        
+        // Add starting point
+        this.trajectory.push({ x: posX, y: posY, z: posZ });
+        
+        // Simulate trajectory for visualization
+        const dt = 0.05;
+        const maxPoints = 40; // More points for longer trajectory
+        
+        for (let i = 0; i < maxPoints; i++) {
+            // Apply physics
+            velZ -= this.G * dt * 0.8; // Slightly reduced gravity for dramatic effect
+            posX += velX * dt;
+            posY += velY * dt;
+            posZ += velZ * dt;
+            
+            // Add point to trajectory
+            this.trajectory.push({ x: posX, y: posY, z: posZ });
+            
+            // Stop if ball goes too far or too low
+            if (posZ < -50 || posY > startPos.y + 500) break;
+        }
+    }
+    
+    // Fast grounded trajectory for fours
+    setFourTrajectory(direction) {
+        const startPos = { x: this.pos.x, y: this.pos.y, z: this.pos.z };
+        let posX = startPos.x;
+        let posY = startPos.y;
+        let posZ = startPos.z;
+        
+        // Adjust velocity for fast grounded shot
+        let velX = this.vel.x * 1.2; // Increase horizontal speed
+        let velY = this.vel.y * 1.3; // Increase forward speed
+        let velZ = this.vel.z * 0.3; // Reduce vertical speed
+        
+        // Apply direction modifiers
+        switch(direction) {
+            case 'left':
+                velX -= 150; // More leftward
+                break;
+            case 'right':
+                velX += 150; // More rightward
+                break;
+            case 'up':
+                velY *= 1.1; // More forward for straight shots
+                break;
+            case 'down':
+                velY *= 0.7; // Less forward for defensive shots
+                break;
+        }
+        
+        // Add starting point
+        this.trajectory.push({ x: posX, y: posY, z: posZ });
+        
+        // Simulate trajectory for visualization
+        const dt = 0.04;
+        const maxPoints = 30;
+        
+        for (let i = 0; i < maxPoints; i++) {
+            // Apply physics
+            velZ -= this.G * dt * 1.2; // Increased gravity to keep ball grounded
+            posX += velX * dt;
+            posY += velY * dt;
+            posZ += velZ * dt;
+            
+            // Keep ball grounded (don't go below ground)
+            if (posZ < 0) {
+                posZ = 0;
+                if (velZ < 0) velZ = 0;
+            }
+            
+            // Add point to trajectory
+            this.trajectory.push({ x: posX, y: posY, z: posZ });
+            
+            // Stop if ball goes too far
+            if (posY > startPos.y + 400) break;
+        }
+    }
+    
+    // Slower grounded trajectory for singles, doubles, triples
+    setRunTrajectory(direction, runs) {
+        const startPos = { x: this.pos.x, y: this.pos.y, z: this.pos.z };
+        let posX = startPos.x;
+        let posY = startPos.y;
+        let posZ = startPos.z;
+        
+        // Adjust velocity for slower grounded shot
+        let velX = this.vel.x * 0.8; // Moderate horizontal speed
+        let velY = this.vel.y * (0.5 + runs * 0.2); // Speed based on runs (1=0.7, 2=0.9, 3=1.1)
+        let velZ = this.vel.z * 0.2; // Very little vertical speed
+        
+        // Apply direction modifiers
+        switch(direction) {
+            case 'left':
+                velX -= 80; // Moderate leftward
+                break;
+            case 'right':
+                velX += 80; // Moderate rightward
+                break;
+            case 'up':
+                velY *= 1.1; // Slightly more forward for straight shots
+                break;
+            case 'down':
+                velY *= 0.8; // Less forward for defensive shots
+                break;
+        }
+        
+        // Add starting point
+        this.trajectory.push({ x: posX, y: posY, z: posZ });
+        
+        // Simulate trajectory for visualization
+        const dt = 0.05;
+        const maxPoints = 25;
+        
+        for (let i = 0; i < maxPoints; i++) {
+            // Apply physics
+            velZ -= this.G * dt * 1.5; // Increased gravity to keep ball grounded
+            posX += velX * dt;
+            posY += velY * dt;
+            posZ += velZ * dt;
+            
+            // Keep ball grounded
+            if (posZ < 0) {
+                posZ = 0;
+                if (velZ < 0) velZ = 0;
+            }
+            
+            // Add point to trajectory
+            this.trajectory.push({ x: posX, y: posY, z: posZ });
+            
+            // Stop if ball goes too far
+            if (posY > startPos.y + 300) break;
+        }
+    }
+    
+    // Defensive trajectory for dot balls
+    setDefensiveTrajectory(direction) {
+        const startPos = { x: this.pos.x, y: this.pos.y, z: this.pos.z };
+        let posX = startPos.x;
+        let posY = startPos.y;
+        let posZ = startPos.z;
+        
+        // Adjust velocity for defensive shot
+        let velX = this.vel.x * 0.3; // Very little horizontal speed
+        let velY = this.vel.y * 0.2; // Very little forward speed
+        let velZ = this.vel.z * 0.1; // Very little vertical speed
+        
+        // Apply direction modifiers
+        switch(direction) {
+            case 'left':
+                velX -= 30; // Minimal leftward
+                break;
+            case 'right':
+                velX += 30; // Minimal rightward
+                break;
+            case 'up':
+                velY *= 1.2; // Slightly more forward
+                break;
+            case 'down':
+                velY *= 0.5; // Very little forward
+                break;
+        }
+        
+        // Add starting point
+        this.trajectory.push({ x: posX, y: posY, z: posZ });
+        
+        // Simulate trajectory for visualization
+        const dt = 0.05;
+        const maxPoints = 15;
+        
+        for (let i = 0; i < maxPoints; i++) {
+            // Apply physics
+            velZ -= this.G * dt * 2; // Strong gravity to keep ball grounded
+            posX += velX * dt;
+            posY += velY * dt;
+            posZ += velZ * dt;
+            
+            // Keep ball grounded
+            if (posZ < 0) {
+                posZ = 0;
+                if (velZ < 0) velZ = 0;
+            }
+            
+            // Add point to trajectory
+            this.trajectory.push({ x: posX, y: posY, z: posZ });
+            
+            // Stop if ball goes too far
+            if (posY > startPos.y + 100) break;
+        }
     }
     travelTo(x, y) {
         this.vel.x = (x - this.pos.x) * 2;
@@ -584,6 +842,32 @@ class Ball {
         const H = this.ctx.canvas.height;
         const scale = 0.5 + (this.pos.y / H);
         const shadowRadius = 5 * scale;
+        
+        // Draw trajectory if enabled
+        if (this.showTrajectory && this.trajectory.length > 0) {
+            this.ctx.strokeStyle = this.trajectoryColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.globalAlpha = 0.7;
+            this.ctx.setLineDash([5, 5]); // Dashed line for trajectory
+            
+            this.ctx.beginPath();
+            for (let i = 0; i < this.trajectory.length; i++) {
+                const point = this.trajectory[i];
+                const screenX = point.x;
+                const screenY = point.y - point.z;
+                
+                if (i === 0) {
+                    this.ctx.moveTo(screenX, screenY);
+                } else {
+                    this.ctx.lineTo(screenX, screenY);
+                }
+            }
+            this.ctx.stroke();
+            
+            // Reset drawing properties
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.setLineDash([]);
+        }
         
         // Draw shadow with better blur effect
         this.ctx.beginPath();

@@ -1003,6 +1003,10 @@ class Game {
         this.wicketsObject.reset();
         this.bowler.startDelivery();
         
+        // Reset ball trajectory visualization
+        this.ball.showTrajectory = false;
+        this.ball.trajectory = [];
+        
         // Enhanced ball type selection based on actual bowler
         let ballTypes = ['fast', 'medium', 'spin'];
         let ballType;
