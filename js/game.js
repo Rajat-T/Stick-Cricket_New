@@ -338,6 +338,7 @@ class Game {
         this.batsmanStats = [];
         this.bowlerStats = [];
         this.previousOverBowler = null; // Track who bowled the previous over
+        this.milestonesReached = []; // Track milestones to avoid duplicate celebrations
         if (this.gameMode === 'quick') {
             this.wicketsTaken = 0;
             this.maxWickets = 10;
@@ -787,7 +788,12 @@ class Game {
                     this.ball.travelTo(catcher.x, catcher.y);
                 }
             } else {
+                const previousScore = this.score;
                 this.score += result.runs;
+                
+                // Check for milestone celebrations (50 and 100)
+                this.checkMilestoneCelebration(previousScore, this.score);
+                
                 this.updateBatsmanStats('runs', result.runs);
                 this.updateBowlerStats(result.runs);
                 if (this.gameMode === 'runChase' && this.score >= this.targetRuns) {
@@ -1216,6 +1222,85 @@ class Game {
                 speedX: (Math.random() - 0.5) * 25,
                 speedY: (Math.random() - 0.5) * 25 - 5, // Upward bias
                 life: 2.0,
+                glow: true,
+                type: 'celebration'
+            });
+        }
+    }
+    
+    checkMilestoneCelebration(previousScore, currentScore) {
+        // Check if batsman crossed 50 or 100
+        const crossedFifty = previousScore < 50 && currentScore >= 50 && !this.milestonesReached.includes(50);
+        const crossedCentury = previousScore < 100 && currentScore >= 100 && !this.milestonesReached.includes(100);
+        
+        if (crossedCentury) {
+            this.milestonesReached.push(100);
+            this.celebrateMilestone('century');
+        } else if (crossedFifty) {
+            this.milestonesReached.push(50);
+            this.celebrateMilestone('fifty');
+        }
+    }
+    
+    celebrateMilestone(milestone) {
+        // Trigger batsman celebration animation
+        this.batsman.celebrate(milestone);
+        
+        // Pause the game temporarily for celebration (but not if game is ending)
+        if (!this.isGameOver()) {
+            this.gameLoopPaused = true;
+        }
+        
+        if (milestone === 'century') {
+            // Century celebration - more elaborate
+            this.showFeedback('🏏💯 CENTURY! OUTSTANDING! 💯🏏', '#FFD700');
+            this.playSound('cheer', 1.5, 0.8);
+            
+            // Create special century particles
+            this.createCelebrationParticles(this.batsman.x, this.batsman.y - 30, 80, '#FFD700');
+            
+            // Screen effects
+            this.wrapper.style.animation = 'celebrate 1s ease-in-out';
+            this.wrapper.style.backgroundColor = 'rgba(255, 215, 0, 0.2)';
+            
+            setTimeout(() => {
+                this.wrapper.style.animation = '';
+                this.wrapper.style.backgroundColor = '';
+                if (!this.isGameOver()) {
+                    this.gameLoopPaused = false;
+                }
+            }, 3000);
+            
+        } else if (milestone === 'fifty') {
+            // Fifty celebration - moderate
+            this.showFeedback('🏏⭐ HALF CENTURY! BRILLIANT! ⭐🏏', '#01FF70');
+            this.playSound('cheer', 1.2, 0.6);
+            
+            // Create fifty particles
+            this.createCelebrationParticles(this.batsman.x, this.batsman.y - 30, 50, '#01FF70');
+            
+            // Mild screen effect
+            this.wrapper.style.backgroundColor = 'rgba(1, 255, 112, 0.15)';
+            
+            setTimeout(() => {
+                this.wrapper.style.backgroundColor = '';
+                if (!this.isGameOver()) {
+                    this.gameLoopPaused = false;
+                }
+            }, 2500);
+        }
+    }
+    
+    createCelebrationParticles(x, y, count, color) {
+        for (let i = 0; i < count; i++) {
+            this.particles.push({
+                x: x + (Math.random() - 0.5) * 150,
+                y: y + (Math.random() - 0.5) * 100,
+                size: Math.random() * 12 + 6,
+                color: color,
+                speedX: (Math.random() - 0.5) * 20,
+                speedY: -Math.random() * 15 - 5,
+                life: 1.5,
                 glow: true,
                 type: 'celebration'
             });

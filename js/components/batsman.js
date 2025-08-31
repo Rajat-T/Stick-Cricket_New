@@ -6,12 +6,24 @@ class Batsman extends Character {
         this.swingState = 0;
         this.swingDirection = 'none';
         this.isSwinging = false;
+        this.celebrationState = 0;
+        this.celebrationType = 'none'; // 'fifty', 'century', 'none'
+        this.celebrationTimer = 0;
     }
     update(dt) {
         if (this.swingState > 0) {
             this.swingState -= dt * 5;
         } else {
             this.isSwinging = false;
+        }
+        
+        // Update celebration animation
+        if (this.celebrationState > 0) {
+            this.celebrationTimer += dt;
+            this.celebrationState -= dt * 0.4; // Celebration lasts 2.5 seconds
+        } else if (this.celebrationTimer > 0) {
+            this.celebrationType = 'none';
+            this.celebrationTimer = 0;
         }
     }
     swing(direction) {
@@ -20,6 +32,12 @@ class Batsman extends Character {
             this.swingDirection = direction;
             this.isSwinging = true;
         }
+    }
+    
+    celebrate(milestone) {
+        this.celebrationState = 1;
+        this.celebrationType = milestone; // 'fifty' or 'century'
+        this.celebrationTimer = 0;
     }
     draw() {
         this.x = this.ctx.canvas.width / 2;
@@ -58,17 +76,38 @@ class Batsman extends Character {
         this.ctx.strokeStyle = '#f1c40f';
         this.ctx.lineWidth = 3;
         
-        // Left arm
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -this.h * 0.6);
-        this.ctx.lineTo(-this.w * 0.4, -this.h * 0.5);
-        this.ctx.stroke();
-        
-        // Right arm
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -this.h * 0.6);
-        this.ctx.lineTo(this.w * 0.4, -this.h * 0.5);
-        this.ctx.stroke();
+        // Celebration animations
+        if (this.celebrationState > 0) {
+            const celebrationIntensity = Math.sin(this.celebrationTimer * 8) * this.celebrationState;
+            const armRaise = this.celebrationType === 'century' ? 1.5 : 1.0;
+            
+            // Raised arms celebration
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -this.h * 0.6);
+            this.ctx.lineTo(-this.w * 0.5 * armRaise, -this.h * 0.8 + celebrationIntensity * 10);
+            this.ctx.stroke();
+            
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -this.h * 0.6);
+            this.ctx.lineTo(this.w * 0.5 * armRaise, -this.h * 0.8 + celebrationIntensity * 10);
+            this.ctx.stroke();
+            
+            // Jump animation for century
+            if (this.celebrationType === 'century') {
+                this.ctx.translate(0, Math.sin(this.celebrationTimer * 6) * -8);
+            }
+        } else {
+            // Normal arms
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -this.h * 0.6);
+            this.ctx.lineTo(-this.w * 0.4, -this.h * 0.5);
+            this.ctx.stroke();
+            
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -this.h * 0.6);
+            this.ctx.lineTo(this.w * 0.4, -this.h * 0.5);
+            this.ctx.stroke();
+        }
         
         // Legs
         this.ctx.strokeStyle = '#2c3e50';
