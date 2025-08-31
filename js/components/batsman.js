@@ -20,7 +20,9 @@ class Batsman extends Character {
         // Update celebration animation with smooth transitions
         if (this.celebrationState > 0) {
             this.celebrationTimer += dt;
-            this.celebrationState = Math.max(0, this.celebrationState - dt * 0.4); // Smooth decay
+            // Use eased decay for smoother animation
+            const easedDecay = 1 - Math.pow(1 - 0.4, dt * 60); // 60fps normalized
+            this.celebrationState = Math.max(0, this.celebrationState - dt * easedDecay);
         }
         
         // Clean reset when celebration ends
@@ -81,24 +83,53 @@ class Batsman extends Character {
         
         // Celebration animations
         if (this.celebrationState > 0) {
-            const smoothIntensity = Math.sin(this.celebrationTimer * 6) * this.celebrationState;
-            const armRaise = this.celebrationType === 'century' ? 1.5 : 1.0;
+            // Enhanced smooth animation with multiple oscillations and easing
+            const timePhase = this.celebrationTimer * 3; // Slower animation frequency
+            const easedIntensity = this.celebrationState * this.celebrationState; // Quadratic easing
             
-            // Raised arms celebration with smooth motion
+            // Multi-layered wave motion for smoother effect
+            const primaryWave = Math.sin(timePhase) * easedIntensity;
+            const secondaryWave = Math.sin(timePhase * 1.5) * easedIntensity * 0.3;
+            const smoothIntensity = primaryWave + secondaryWave;
+            
+            // Progressive arm raise based on celebration type
+            const baseArmRaise = this.celebrationType === 'century' ? 1.8 : 1.2;
+            const armRaise = baseArmRaise * easedIntensity;
+            
+            // Enhanced raised arms celebration with natural motion
             this.ctx.beginPath();
             this.ctx.moveTo(0, -this.h * 0.6);
-            this.ctx.lineTo(-this.w * 0.5 * armRaise, -this.h * 0.8 + smoothIntensity * 8);
+            this.ctx.lineTo(
+                -this.w * 0.5 * armRaise, 
+                -this.h * (0.8 + smoothIntensity * 0.08)
+            );
             this.ctx.stroke();
             
             this.ctx.beginPath();
             this.ctx.moveTo(0, -this.h * 0.6);
-            this.ctx.lineTo(this.w * 0.5 * armRaise, -this.h * 0.8 + smoothIntensity * 8);
+            this.ctx.lineTo(
+                this.w * 0.5 * armRaise, 
+                -this.h * (0.8 + smoothIntensity * 0.08)
+            );
             this.ctx.stroke();
             
-            // Smooth jump animation for century
+            // Enhanced jump animation for century with natural physics
             if (this.celebrationType === 'century') {
-                const jumpHeight = Math.sin(this.celebrationTimer * 4) * -6 * this.celebrationState;
+                // Use a combination of sine waves for realistic jump motion
+                const jumpPhase = this.celebrationTimer * 2.5;
+                const jumpEasing = Math.sin(jumpPhase) * Math.sin(jumpPhase * 0.5);
+                const jumpHeight = jumpEasing * -12 * easedIntensity;
                 this.ctx.translate(0, jumpHeight);
+                
+                // Add slight horizontal sway for more dynamic movement
+                const swayPhase = this.celebrationTimer * 4;
+                const sway = Math.sin(swayPhase) * 2 * easedIntensity;
+                this.ctx.translate(sway, 0);
+            } else {
+                // Subtle bounce for fifty celebration
+                const bouncePhase = this.celebrationTimer * 4;
+                const bounce = Math.abs(Math.sin(bouncePhase)) * -3 * easedIntensity;
+                this.ctx.translate(0, bounce);
             }
         } else {
             // Normal arms

@@ -30,6 +30,7 @@ class Game {
         this.tournamentManager = null;
         this.isTournamentMode = false;
         this.tournamentTarget = null;
+        this.celebrationInProgress = false;
         requestAnimationFrame(t => this.gameLoop(t));
     }
     initUI() {
@@ -303,6 +304,7 @@ class Game {
         this.scorecardBtn.style.top = '120px';
         this.scorecardBtn.style.right = '15px';
         this.wicketsTaken = 0;
+        this.celebrationInProgress = false; // Reset celebration state
         const difficulty = document.getElementById('difficulty').value;
         const difficulties = {
             amateur: {
@@ -844,11 +846,18 @@ class Game {
                 this.ball.isActive = false;
                 this.gameState = 'between_balls';
                 this.awaitingNextBall = true;
+                
+                // Check if celebration is in progress and adjust delay accordingly
+                let nextBallDelay = result.runs === 0 ? 1500 : 2000;
+                if (this.celebrationInProgress) {
+                    nextBallDelay += 3000; // Add extra delay for celebration
+                }
+                
                 setTimeout(() => {
-                    if (this.gameState === 'between_balls') {
+                    if (this.gameState === 'between_balls' && !this.celebrationInProgress) {
                         this.nextBall();
                     }
-                }, result.runs === 0 ? 1500 : 2000);
+                }, nextBallDelay);
             }
         }
     }
@@ -1171,18 +1180,35 @@ class Game {
         this.feedbackText.style.transform = 'translate(-50%, -50%) scale(1)';
         this.feedbackText.style.opacity = 1;
         
-        // Add pulsing effect for important events
-        if (text.includes('Boundary') || text.includes('SIX') || text.includes('Wicket') || text.includes('Target')) {
+        // Enhanced effects for milestone celebrations
+        if (text.includes('CENTURY') || text.includes('FIFTY')) {
+            // Add special celebration animation
+            this.feedbackText.style.animation = 'celebrationPulse 0.8s ease-in-out';
+            this.feedbackText.style.fontSize = 'clamp(2.2rem, 7vw, 4rem)';
+            
+            setTimeout(() => {
+                this.feedbackText.style.animation = 'feedbackPulse 0.3s ease-in-out infinite alternate';
+                this.feedbackText.style.fontSize = 'clamp(2rem, 6vw, 3.5rem)';
+            }, 800);
+            
+            setTimeout(() => {
+                this.feedbackText.style.animation = '';
+            }, 2000);
+        } else if (text.includes('Boundary') || text.includes('SIX') || text.includes('Wicket') || text.includes('Target')) {
+            // Add pulsing effect for important events
             this.feedbackText.style.animation = 'feedbackPulse 0.3s ease-in-out infinite alternate';
             setTimeout(() => {
                 this.feedbackText.style.animation = '';
             }, 1500);
         }
         
+        // Auto-hide timing based on text importance
+        const hideDelay = (text.includes('CENTURY') || text.includes('FIFTY')) ? 2500 : 1500;
+        
         setTimeout(() => {
             this.feedbackText.style.transform = 'translate(-50%, -50%) scale(0.7)';
             this.feedbackText.style.opacity = 0;
-        }, 1500);
+        }, hideDelay);
     }
     createParticles(x, y, count, color) {
         for (let i = 0; i < count; i++) {
@@ -1258,6 +1284,9 @@ class Game {
     }
     
     celebrateMilestone(milestone, batsmanName) {
+        // Set celebration flag to prevent next ball during animation
+        this.celebrationInProgress = true;
+        
         // Trigger batsman celebration animation
         this.batsman.celebrate(milestone);
         
@@ -1268,7 +1297,9 @@ class Game {
         
         if (milestone === 'century') {
             // Century celebration - more elaborate
-            this.showFeedback(`🏏💯 ${batsmanName} CENTURY! OUTSTANDING! 💯🏏`, '#FFD700');
+            // Shorten the text to prevent overflow and make it more punchy
+            const shortName = batsmanName.split(' ').pop(); // Use last name only
+            this.showFeedback(`💯 ${shortName} CENTURY! 💯`, '#FFD700');
             this.playSound('cheer', 1.5, 0.8);
             
             // Create special century particles
@@ -1281,14 +1312,23 @@ class Game {
             setTimeout(() => {
                 this.wrapper.style.animation = '';
                 this.wrapper.style.backgroundColor = '';
+                this.celebrationInProgress = false;
                 if (!this.isGameOver()) {
                     this.gameLoopPaused = false;
+                    // Schedule next ball after celebration ends
+                    setTimeout(() => {
+                        if (this.gameState === 'between_balls') {
+                            this.nextBall();
+                        }
+                    }, 500);
                 }
             }, 3000);
             
         } else if (milestone === 'fifty') {
             // Fifty celebration - moderate
-            this.showFeedback(`🏏⭐ ${batsmanName} HALF CENTURY! BRILLIANT! ⭐🏏`, '#01FF70');
+            // Shorten the text to prevent overflow
+            const shortName = batsmanName.split(' ').pop(); // Use last name only
+            this.showFeedback(`⭐ ${shortName} FIFTY! ⭐`, '#01FF70');
             this.playSound('cheer', 1.2, 0.6);
             
             // Create fifty particles
@@ -1299,8 +1339,15 @@ class Game {
             
             setTimeout(() => {
                 this.wrapper.style.backgroundColor = '';
+                this.celebrationInProgress = false;
                 if (!this.isGameOver()) {
                     this.gameLoopPaused = false;
+                    // Schedule next ball after celebration ends
+                    setTimeout(() => {
+                        if (this.gameState === 'between_balls') {
+                            this.nextBall();
+                        }
+                    }, 500);
                 }
             }, 2500);
         }
@@ -1308,16 +1355,41 @@ class Game {
     
     createCelebrationParticles(x, y, count, color) {
         for (let i = 0; i < count; i++) {
+            // Enhanced particle spread and variety
+            const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+            const distance = 80 + Math.random() * 70;
+            const spreadX = Math.cos(angle) * distance;
+            const spreadY = Math.sin(angle) * distance;
+            
             this.particles.push({
-                x: x + (Math.random() - 0.5) * 150,
-                y: y + (Math.random() - 0.5) * 100,
-                size: Math.random() * 12 + 6,
+                x: x + spreadX,
+                y: y + spreadY,
+                size: Math.random() * 15 + 8, // Larger particles
                 color: color,
-                speedX: (Math.random() - 0.5) * 20,
-                speedY: -Math.random() * 15 - 5,
-                life: 1.5,
+                speedX: (Math.random() - 0.5) * 25,
+                speedY: -Math.random() * 20 - 8, // More upward velocity
+                life: 2.0 + Math.random() * 1.0, // Longer life
                 glow: true,
-                type: 'celebration'
+                type: 'celebration',
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.2
+            });
+        }
+        
+        // Add extra burst effect for celebration
+        for (let i = 0; i < count / 2; i++) {
+            this.particles.push({
+                x: x + (Math.random() - 0.5) * 50,
+                y: y + (Math.random() - 0.5) * 30,
+                size: Math.random() * 20 + 12,
+                color: color,
+                speedX: (Math.random() - 0.5) * 15,
+                speedY: -Math.random() * 25 - 10,
+                life: 2.5,
+                glow: true,
+                type: 'celebration',
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.3
             });
         }
     }
@@ -1327,6 +1399,18 @@ class Game {
             p.x += p.speedX;
             p.y += p.speedY;
             p.life -= deltaTime * 2;
+            
+            // Update rotation if particle has it
+            if (p.rotation !== undefined && p.rotationSpeed !== undefined) {
+                p.rotation += p.rotationSpeed;
+            }
+            
+            // Add gravity effect for celebration particles
+            if (p.type === 'celebration') {
+                p.speedY += deltaTime * 20; // Gravity
+                p.speedX *= 0.99; // Air resistance
+            }
+            
             if (p.life <= 0) {
                 this.particles.splice(i, 1);
             }
@@ -1351,9 +1435,16 @@ class Game {
                     this.drawStar(p.x, p.y, p.size * 0.5, p.size, 5);
                     break;
                 case 'celebration':
-                    // Sparkle effect for wickets
+                    // Enhanced sparkle effect for celebrations with rotation
+                    this.ctx.save();
+                    if (p.rotation !== undefined) {
+                        this.ctx.translate(p.x, p.y);
+                        this.ctx.rotate(p.rotation);
+                        this.ctx.translate(-p.x, -p.y);
+                    }
                     this.ctx.fillStyle = p.color;
-                    this.drawSparkle(p.x, p.y, p.size);
+                    this.drawEnhancedSparkle(p.x, p.y, p.size);
+                    this.ctx.restore();
                     break;
                 default:
                     // Standard circular particles
@@ -1415,6 +1506,30 @@ class Game {
         this.ctx.stroke();
     }
     
+    // Enhanced sparkle for celebrations
+    drawEnhancedSparkle(cx, cy, size) {
+        // Draw main star shape
+        this.ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI) / 4;
+            const radius = i % 2 === 0 ? size : size * 0.4;
+            const x = cx + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius;
+            if (i === 0) {
+                this.ctx.moveTo(x, y);
+            } else {
+                this.ctx.lineTo(x, y);
+            }
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        // Add inner glow circle
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, size * 0.3, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+    
     returnToMenu() {
         // Remove all tournament overlays and results
         document.querySelectorAll('.tournament-results-overlay, .tournament-overlay').forEach(el => el.remove());
@@ -1423,6 +1538,7 @@ class Game {
         this.isTournamentMode = false;
         this.tournamentManager = null;
         this.lastMatchResult = null;
+        this.celebrationInProgress = false; // Reset celebration state
         
         // Show main menu
         this.menu.style.display = 'flex';
@@ -1794,6 +1910,7 @@ class Game {
             this.currentBowler = null;
             this.previousOverBowler = null;
             this.milestonesReached = []; // Reset milestone tracking
+            this.celebrationInProgress = false; // Reset celebration state
             
             // Show team display for next match
             this.showTeamDisplay();
