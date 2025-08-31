@@ -1411,13 +1411,27 @@ class Game {
         `;
         
         if (isComplete) {
-            resultHTML += `
-                <div class="tournament-complete">
-                    <h3>🏆 Tournament Complete! 🏆</h3>
-                    <p class="winner">Winner: ${tournamentData.tournamentWinner.name}</p>
-                </div>
-                <button class="menu-btn tournament-btn" onclick="game.returnToMenu()">Back to Menu</button>
-            `;
+            const userWonTournament = tournamentData.tournamentWinner && tournamentData.tournamentWinner.id === this.userTeam.id;
+            
+            if (userWonTournament) {
+                resultHTML += `
+                    <div class="tournament-victory">
+                        <h3>🎆🏆 TOURNAMENT CHAMPIONS! 🏆🎆</h3>
+                        <div class="victory-animation">🎊🎉🎊🎉🎊</div>
+                        <p class="champion-text">Congratulations! ${this.userTeam.name} are the tournament winners!</p>
+                        <div class="fireworks">✨🎆✨🎆✨🎆✨</div>
+                    </div>
+                    <button class="menu-btn tournament-btn victory-btn" onclick="game.returnToMenu()">Celebrate Victory!</button>
+                `;
+            } else {
+                resultHTML += `
+                    <div class="tournament-complete">
+                        <h3>🏆 Tournament Complete! 🏆</h3>
+                        <p class="winner">Winner: ${tournamentData.tournamentWinner.name}</p>
+                    </div>
+                    <button class="menu-btn tournament-btn" onclick="game.returnToMenu()">Back to Menu</button>
+                `;
+            }
         } else if (hasNextMatch) {
             const nextMatchInfo = this.tournamentManager.getCurrentMatchInfo();
             resultHTML += `

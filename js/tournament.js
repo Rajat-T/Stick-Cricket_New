@@ -274,6 +274,12 @@ class TournamentManager {
             return;
         }
         
+        // Check if final has already been played
+        if (this.finalMatch && this.finalMatch.result) {
+            this.currentMatch = null;
+            return;
+        }
+        
         // No user matches left, check if final is available
         if (this.areGroupsComplete()) {
             this.setupFinal();
@@ -329,6 +335,11 @@ class TournamentManager {
     }
 
     setupFinal() {
+        // Don't setup final if it already exists
+        if (this.finalMatch) {
+            return;
+        }
+        
         const groupAWinner = this.groupStandings.A[0];
         const groupBWinner = this.groupStandings.B[0];
         
