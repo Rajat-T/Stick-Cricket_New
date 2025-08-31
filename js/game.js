@@ -395,6 +395,12 @@ class Game {
         this.nextBall();
     }
     selectBowler() {
+        // Safety check: ensure we have an opposition team
+        if (!this.oppositionTeam || !this.oppositionTeam.players) {
+            console.error('No opposition team available for bowler selection');
+            return;
+        }
+        
         const eligibleBowlers = this.oppositionTeam.players.filter(player =>
             (player.role.includes('Bowler') || player.role.includes('All-rounder'))
         );
@@ -471,10 +477,12 @@ class Game {
         }
 
         // Update UI with current bowler information
-        this.bowlerNameEl.textContent = this.currentBowler.name;
-        this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
-        this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
-        this.bowlerTeamEl.style.color = this.oppositionTeam.secondaryColor;
+        if (this.bowlerNameEl && this.bowlerTeamEl) {
+            this.bowlerNameEl.textContent = this.currentBowler.name;
+            this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
+            this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
+            this.bowlerTeamEl.style.color = this.oppositionTeam.secondaryColor;
+        }
     }
     updateBowlerStats(runs = 0, isWicket = false) {
         // Only update stats for the current bowler who is actually bowling this ball
@@ -788,13 +796,12 @@ class Game {
                     this.ball.travelTo(catcher.x, catcher.y);
                 }
             } else {
-                const previousScore = this.score;
                 this.score += result.runs;
-                
-                // Check for milestone celebrations (50 and 100)
-                this.checkMilestoneCelebration(previousScore, this.score);
-                
                 this.updateBatsmanStats('runs', result.runs);
+                
+                // Check for individual batsman milestone celebrations (50 and 100)
+                this.checkIndividualMilestoneCelebration(result.runs);
+                
                 this.updateBowlerStats(result.runs);
                 if (this.gameMode === 'runChase' && this.score >= this.targetRuns) {
                     this.showFeedback(`Chase Complete! ${this.score}/${this.targetRuns}`, '#01FF70');
@@ -1228,21 +1235,29 @@ class Game {
         }
     }
     
-    checkMilestoneCelebration(previousScore, currentScore) {
-        // Check if batsman crossed 50 or 100
-        const crossedFifty = previousScore < 50 && currentScore >= 50 && !this.milestonesReached.includes(50);
-        const crossedCentury = previousScore < 100 && currentScore >= 100 && !this.milestonesReached.includes(100);
+    checkIndividualMilestoneCelebration(runsScored) {
+        // Get the current batsman's stats
+        const currentBatsmanIndex = this.batsmanStats.findIndex(stat => stat.howOut === null || stat.howOut === undefined);
+        if (currentBatsmanIndex === -1) return;
+        
+        const currentBatsman = this.batsmanStats[currentBatsmanIndex];
+        const previousBatsmanScore = currentBatsman.runs - runsScored;
+        const currentBatsmanScore = currentBatsman.runs;
+        
+        // Check if individual batsman crossed 50 or 100
+        const crossedFifty = previousBatsmanScore < 50 && currentBatsmanScore >= 50 && !this.milestonesReached.includes(`${currentBatsman.name}_50`);
+        const crossedCentury = previousBatsmanScore < 100 && currentBatsmanScore >= 100 && !this.milestonesReached.includes(`${currentBatsman.name}_100`);
         
         if (crossedCentury) {
-            this.milestonesReached.push(100);
-            this.celebrateMilestone('century');
+            this.milestonesReached.push(`${currentBatsman.name}_100`);
+            this.celebrateMilestone('century', currentBatsman.name);
         } else if (crossedFifty) {
-            this.milestonesReached.push(50);
-            this.celebrateMilestone('fifty');
+            this.milestonesReached.push(`${currentBatsman.name}_50`);
+            this.celebrateMilestone('fifty', currentBatsman.name);
         }
     }
     
-    celebrateMilestone(milestone) {
+    celebrateMilestone(milestone, batsmanName) {
         // Trigger batsman celebration animation
         this.batsman.celebrate(milestone);
         
@@ -1253,7 +1268,7 @@ class Game {
         
         if (milestone === 'century') {
             // Century celebration - more elaborate
-            this.showFeedback('🏏💯 CENTURY! OUTSTANDING! 💯🏏', '#FFD700');
+            this.showFeedback(`🏏💯 ${batsmanName} CENTURY! OUTSTANDING! 💯🏏`, '#FFD700');
             this.playSound('cheer', 1.5, 0.8);
             
             // Create special century particles
@@ -1273,7 +1288,7 @@ class Game {
             
         } else if (milestone === 'fifty') {
             // Fifty celebration - moderate
-            this.showFeedback('🏏⭐ HALF CENTURY! BRILLIANT! ⭐🏏', '#01FF70');
+            this.showFeedback(`🏏⭐ ${batsmanName} HALF CENTURY! BRILLIANT! ⭐🏏`, '#01FF70');
             this.playSound('cheer', 1.2, 0.6);
             
             // Create fifty particles
@@ -1774,6 +1789,11 @@ class Game {
             this.batsmanStats = [];
             this.bowlerStats = [];
             this.lastMatchResult = null;
+            
+            // CRITICAL: Reset bowler state for new match
+            this.currentBowler = null;
+            this.previousOverBowler = null;
+            this.milestonesReached = []; // Reset milestone tracking
             
             // Show team display for next match
             this.showTeamDisplay();

@@ -17,11 +17,14 @@ class Batsman extends Character {
             this.isSwinging = false;
         }
         
-        // Update celebration animation
+        // Update celebration animation with smooth transitions
         if (this.celebrationState > 0) {
             this.celebrationTimer += dt;
-            this.celebrationState -= dt * 0.4; // Celebration lasts 2.5 seconds
-        } else if (this.celebrationTimer > 0) {
+            this.celebrationState = Math.max(0, this.celebrationState - dt * 0.4); // Smooth decay
+        }
+        
+        // Clean reset when celebration ends
+        if (this.celebrationState <= 0 && this.celebrationTimer > 0) {
             this.celebrationType = 'none';
             this.celebrationTimer = 0;
         }
@@ -78,23 +81,24 @@ class Batsman extends Character {
         
         // Celebration animations
         if (this.celebrationState > 0) {
-            const celebrationIntensity = Math.sin(this.celebrationTimer * 8) * this.celebrationState;
+            const smoothIntensity = Math.sin(this.celebrationTimer * 6) * this.celebrationState;
             const armRaise = this.celebrationType === 'century' ? 1.5 : 1.0;
             
-            // Raised arms celebration
+            // Raised arms celebration with smooth motion
             this.ctx.beginPath();
             this.ctx.moveTo(0, -this.h * 0.6);
-            this.ctx.lineTo(-this.w * 0.5 * armRaise, -this.h * 0.8 + celebrationIntensity * 10);
+            this.ctx.lineTo(-this.w * 0.5 * armRaise, -this.h * 0.8 + smoothIntensity * 8);
             this.ctx.stroke();
             
             this.ctx.beginPath();
             this.ctx.moveTo(0, -this.h * 0.6);
-            this.ctx.lineTo(this.w * 0.5 * armRaise, -this.h * 0.8 + celebrationIntensity * 10);
+            this.ctx.lineTo(this.w * 0.5 * armRaise, -this.h * 0.8 + smoothIntensity * 8);
             this.ctx.stroke();
             
-            // Jump animation for century
+            // Smooth jump animation for century
             if (this.celebrationType === 'century') {
-                this.ctx.translate(0, Math.sin(this.celebrationTimer * 6) * -8);
+                const jumpHeight = Math.sin(this.celebrationTimer * 4) * -6 * this.celebrationState;
+                this.ctx.translate(0, jumpHeight);
             }
         } else {
             // Normal arms
