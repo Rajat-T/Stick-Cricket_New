@@ -301,8 +301,8 @@ class Game {
         this.scoreboard.style.display = 'block';
         this.overTracker.style.display = 'block';
         this.scorecardBtn.style.display = 'block';
-        this.scorecardBtn.style.top = '120px';
-        this.scorecardBtn.style.right = '15px';
+        this.scorecardBtn.style.top = '115px';
+        this.scorecardBtn.style.right = '20px';
         this.wicketsTaken = 0;
         this.celebrationInProgress = false; // Reset celebration state
         const difficulty = document.getElementById('difficulty').value;
