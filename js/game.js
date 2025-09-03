@@ -349,7 +349,7 @@ class Game {
         } else if (this.gameMode === 'tournament') {
             this.wicketsTaken = 0;
             this.maxWickets = 10;
-            this.maxOvers = 50;
+            this.maxOvers = 20; // T20 format - 20 overs per side
             
             if (this.isTournamentMode) {
                 // Generate target for user to chase (user always chases)
@@ -437,12 +437,21 @@ class Game {
                 const beforeFilter = availableBowlers.length;
                 availableBowlers = availableBowlers.filter(b => b.name !== this.previousOverBowler.name);
                 console.log(`Filtered out previous over bowler: ${this.previousOverBowler.name}. Bowlers before: ${beforeFilter}, after: ${availableBowlers.length}`);
+                
+                // If we've filtered out all bowlers, we need to allow the previous bowler to continue
+                // This is a safety check to prevent the game from breaking
+                if (availableBowlers.length === 0) {
+                    console.log('No bowlers available after consecutive over filter, allowing previous bowler to continue');
+                    availableBowlers = [this.previousOverBowler];
+                }
             }
             
             // RULE 2: Limited overs restriction (n/5 rule)
             // In limited overs cricket, a bowler can't bowl more than maxOvers/5 overs
+            // For a 20-over game, this means max 4 overs per bowler
             if (this.maxOvers && this.maxOvers > 0) {
-                const maxOversPerBowler = Math.floor(this.maxOvers / 5);
+                // Calculate max overs per bowler (20 overs -> 4 overs per bowler)
+                const maxOversPerBowler = Math.min(4, Math.floor(this.maxOvers / 5));
                 if (maxOversPerBowler > 0) {
                     availableBowlers = availableBowlers.filter(bowler => {
                         const bowlerStat = this.bowlerStats.find(b => b.name === bowler.name);
@@ -458,7 +467,8 @@ class Game {
                 // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
                 availableBowlers = [...eligibleBowlers];
                 if (this.maxOvers && this.maxOvers > 0) {
-                    const maxOversPerBowler = Math.floor(this.maxOvers / 5);
+                    // Calculate max overs per bowler (20 overs -> 4 overs per bowler)
+                    const maxOversPerBowler = Math.min(4, Math.floor(this.maxOvers / 5));
                     if (maxOversPerBowler > 0) {
                         const limitedBowlers = availableBowlers.filter(bowler => {
                             const bowlerStat = this.bowlerStats.find(b => b.name === bowler.name);
@@ -475,6 +485,7 @@ class Game {
             // Select a random bowler from available options
             const newBowler = availableBowlers[Math.floor(Math.random() * availableBowlers.length)];
             console.log(`Selected new bowler: ${newBowler.name}`);
+            console.log(`Available bowlers: ${availableBowlers.map(b => b.name).join(', ')}`);
             this.currentBowler = newBowler;
         }
 
@@ -511,7 +522,24 @@ class Game {
         bowlerStat.balls++;
         if (isWicket) bowlerStat.wickets++;
         
-        console.log(`Updated ${bowlerName} stats: ${bowlerStat.balls} balls, ${bowlerStat.runs} runs, ${bowlerStat.wickets} wickets`);
+        // Log bowling stats for verification
+        const bowlerOvers = Math.floor(bowlerStat.balls / 6);
+        const bowlerBallsInOver = bowlerStat.balls % 6;
+        console.log(`Updated ${bowlerName} stats: ${bowlerOvers}.${bowlerBallsInOver} overs, ${bowlerStat.runs} runs, ${bowlerStat.wickets} wickets`);
+        
+        // Check if bowler has completed an over
+        if (bowlerBallsInOver === 1 && bowlerStat.balls > 1) { // First ball of a new over (after completing previous)
+            const completedOvers = Math.floor((bowlerStat.balls - 1) / 6);
+            console.log(`${bowlerName} has completed ${completedOvers} over(s)`);
+        }
+        
+        // Check if bowler has exceeded max overs (for debugging)
+        if (this.maxOvers && this.maxOvers > 0) {
+            const maxOversPerBowler = Math.min(4, Math.floor(this.maxOvers / 5));
+            if (bowlerOvers > maxOversPerBowler) {
+                console.error(`ERROR: ${bowlerName} has bowled ${bowlerOvers} overs, exceeding the limit of ${maxOversPerBowler} overs!`);
+            }
+        }
     }
     showScorecard() {
         this.gameLoopPaused = true;
@@ -984,6 +1012,7 @@ class Game {
             
             // Set the previous over bowler BEFORE selecting new bowler
             if (this.currentBowler) {
+                console.log(`Setting previous over bowler to: ${this.currentBowler.name}`);
                 this.previousOverBowler = this.currentBowler;
             }
             
