@@ -1135,7 +1135,8 @@ class Game {
         } else if (this.gameMode === 'tournament' && this.isTournamentMode) {
             // Calculate opposition score (simplified)
             const oppositionScore = this.tournamentTarget - 1 + Math.floor(Math.random() * 20); // Random around target
-            const oppositionBalls = Math.floor(Math.random() * 200) + 100; // Random ball count
+            // T20 format: opposition innings is 20 overs (120 balls)
+            const oppositionBalls = (this.maxOvers && this.maxOvers > 0 ? this.maxOvers : 20) * 6;
             
             if (this.score >= this.tournamentTarget) {
                 message = `Chase Successful! ${this.score}/${this.tournamentTarget}`;

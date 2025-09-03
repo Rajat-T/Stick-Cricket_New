@@ -1,3 +1,5 @@
+const BALLS_PER_T20 = 20 * 6; // 120 balls per innings
+
 class TournamentManager {
     constructor() {
         this.groups = { A: [], B: [] };
@@ -194,12 +196,12 @@ class TournamentManager {
     }
 
     generateScore() {
-        // Generate realistic cricket scores
-        const overs = Math.floor(Math.random() * 20) + 10; // 10-30 overs
+        // T20 format: 20 overs per side (fixed for consistency in NRR)
+        const overs = 20;
         const wickets = Math.floor(Math.random() * 8) + 2; // 2-10 wickets
         const runsPerOver = 4 + Math.random() * 8; // 4-12 runs per over
         const runs = Math.floor(overs * runsPerOver);
-        const balls = overs * 6;
+        const balls = BALLS_PER_T20;
 
         return { runs, balls, wickets, overs };
     }
@@ -215,18 +217,35 @@ class TournamentManager {
         // Update team1 stats
         const team1Standing = this.groupStandings[group].find(s => s.team.id === match.team1.id);
         team1Standing.matches++;
+
+        // Apply NRR all-out rule: if a team loses and faced fewer than full quota,
+        // treat balls faced as full quota for NRR purposes.
+        const team1Lost = result.winner.id !== match.team1.id;
+        const team2Lost = result.winner.id !== match.team2.id;
+
+        const team1ActualBalls = result.team1Score.balls;
+        const team2ActualBalls = result.team2Score.balls;
+
+        const team1EffectiveBalls = team1Lost && team1ActualBalls < BALLS_PER_T20
+            ? BALLS_PER_T20
+            : team1ActualBalls;
+
+        const team2EffectiveBalls = team2Lost && team2ActualBalls < BALLS_PER_T20
+            ? BALLS_PER_T20
+            : team2ActualBalls;
+
         team1Standing.runsFor += result.team1Score.runs;
-        team1Standing.ballsFor += result.team1Score.balls;
+        team1Standing.ballsFor += team1EffectiveBalls;
         team1Standing.runsAgainst += result.team2Score.runs;
-        team1Standing.ballsAgainst += result.team2Score.balls;
+        team1Standing.ballsAgainst += team2EffectiveBalls;
 
         // Update team2 stats
         const team2Standing = this.groupStandings[group].find(s => s.team.id === match.team2.id);
         team2Standing.matches++;
         team2Standing.runsFor += result.team2Score.runs;
-        team2Standing.ballsFor += result.team2Score.balls;
+        team2Standing.ballsFor += team2EffectiveBalls;
         team2Standing.runsAgainst += result.team1Score.runs;
-        team2Standing.ballsAgainst += result.team1Score.balls;
+        team2Standing.ballsAgainst += team1EffectiveBalls;
 
         // Update win/loss and points
         if (result.winner.id === match.team1.id) {
