@@ -557,6 +557,8 @@ class Game {
         this.scorecardBtn.style.display = 'block';
         this.feedbackText.style.display = 'block';
         this.gameLoopPaused = false;
+        // Also reset awaitingNextBall to ensure game continues properly
+        this.awaitingNextBall = false;
     }
     populateScorecard() {
         this.scorecardBody.innerHTML = '';
@@ -684,7 +686,12 @@ class Game {
         if ((this.gameState === 'playing' || this.gameState === 'between_balls') &&
             !this.ball.isActive && !this.awaitingNextBall && !this.isGameOver()) {
             this.awaitingNextBall = true;
-            setTimeout(() => this.nextBall(), 1200);
+            setTimeout(() => {
+                // Only call nextBall if game is not paused
+                if (!this.gameLoopPaused) {
+                    this.nextBall();
+                }
+            }, 1200);
         }
 
         if (this.lastTime === 0) {
@@ -883,7 +890,10 @@ class Game {
                 
                 setTimeout(() => {
                     if (this.gameState === 'between_balls' && !this.celebrationInProgress) {
-                        this.nextBall();
+                        // Only call nextBall if game is not paused
+                        if (!this.gameLoopPaused) {
+                            this.nextBall();
+                        }
                     }
                 }, nextBallDelay);
             }
@@ -913,7 +923,12 @@ class Game {
             this.updateScoreboard();
             this.gameState = 'between_balls';
             this.awaitingNextBall = true;
-            setTimeout(() => this.nextBall(), 1500);
+            setTimeout(() => {
+                // Only call nextBall if game is not paused
+                if (!this.gameLoopPaused) {
+                    this.nextBall();
+                }
+            }, 1500);
         }
     }
     handleWicket(type, runsScoredOnWicket) {
@@ -948,7 +963,12 @@ class Game {
         } else {
             this.awaitingNextBall = true;
             this.gameLoopPaused = false;
-            setTimeout(() => this.nextBall(), 2000);
+            setTimeout(() => {
+                // Only call nextBall if game is not paused
+                if (!this.gameLoopPaused) {
+                    this.nextBall();
+                }
+            }, 2000);
         }
     }
     updateBatsmanStats(eventType, value, runsScored = 0) {
@@ -1045,7 +1065,10 @@ class Game {
     // Reset state and start the next delivery
     nextBall() {
         this.awaitingNextBall = false; // clear waiting state between balls
-        this.gameLoopPaused = false; // resume game loop for the new ball
+        // Only resume game loop if it wasn't intentionally paused (e.g., for scorecard)
+        if (!this.scorecardDisplay || this.scorecardDisplay.style.display !== 'flex') {
+            this.gameLoopPaused = false; // resume game loop for the new ball
+        }
         if (this.isGameOver()) {
             this.endGame();
             return;
