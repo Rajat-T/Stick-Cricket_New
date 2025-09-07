@@ -35,6 +35,10 @@ class Ball {
         this.trajectory = [];
         this.showTrajectory = false;
         this.trajectoryColor = '#FFFFFF';
+        this.trajectoryType = null; // 'Lofted' | 'Ground'
+        this.trajectoryStartTime = 0;
+        this.trajectoryDurationMs = 0;
+        this.trajectoryTTL = 1800; // ms: keep tracer visible ~1.8s
         
         this.reset();
     }
@@ -62,6 +66,10 @@ class Ball {
         this.trajectory = [];
         this.showTrajectory = false;
         this.trajectoryColor = '#FFFFFF';
+        this.trajectoryType = null;
+        this.trajectoryStartTime = 0;
+        this.trajectoryDurationMs = 0;
+        this.trajectoryTTL = 1800;
     }
     bowl(type, side, bowlerType = null, bowlingStyle = null) {
         this.reset();
@@ -530,24 +538,32 @@ class Ball {
     setTrajectory(direction, runs) {
         this.showTrajectory = true;
         this.trajectory = [];
+        this.trajectoryStartTime = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        this.trajectoryDurationMs = 0;
         
         // Set color and trajectory characteristics based on runs scored
         if (runs === 6) {
             // Six - high trajectory
             this.trajectoryColor = '#FF4136'; // Red for sixes
             this.setSixTrajectory(direction);
+            this.trajectoryType = 'Lofted';
         } else if (runs === 4) {
             // Four - fast grounded trajectory
             this.trajectoryColor = '#0074D9'; // Blue for fours
             this.setFourTrajectory(direction);
+            this.trajectoryType = 'Ground';
         } else if (runs > 0) {
             // Other runs - slower grounded trajectory
             this.trajectoryColor = '#01FF70'; // Green for singles, doubles, triples
             this.setRunTrajectory(direction, runs);
+            // Decide lofted vs ground from height
+            const maxZ = this.trajectory.reduce((m, p) => Math.max(m, p.z || 0), 0);
+            this.trajectoryType = maxZ > 35 ? 'Lofted' : 'Ground';
         } else {
             // Dot ball or wicket - defensive trajectory
             this.trajectoryColor = '#FFDC00'; // Yellow for defensive shots
             this.setDefensiveTrajectory(direction);
+            this.trajectoryType = 'Ground';
         }
     }
     
@@ -599,6 +615,8 @@ class Ball {
             // Stop if ball goes too far or too low
             if (posZ < -50 || posY > startPos.y + 500) break;
         }
+        // Record simulated duration for HUD animation
+        this.trajectoryDurationMs = Math.max(this.trajectory.length * dt * 1000, this.trajectoryDurationMs);
     }
     
     // Fast grounded trajectory for fours
@@ -711,6 +729,7 @@ class Ball {
             // Stop if ball goes too far
             if (posY > startPos.y + 300) break;
         }
+        this.trajectoryDurationMs = Math.max(this.trajectory.length * dt * 1000, this.trajectoryDurationMs);
     }
     
     // Defensive trajectory for dot balls
@@ -767,6 +786,7 @@ class Ball {
             // Stop if ball goes too far
             if (posY > startPos.y + 100) break;
         }
+        this.trajectoryDurationMs = Math.max(this.trajectory.length * dt * 1000, this.trajectoryDurationMs);
     }
     travelTo(x, y) {
         this.vel.x = (x - this.pos.x) * 2;
@@ -861,38 +881,28 @@ class Ball {
         }
     }
     draw() {
-        if (!this.isActive) return;
         const W = this.ctx.canvas.width;
         const H = this.ctx.canvas.height;
         const scale = 0.5 + (this.pos.y / H);
         const shadowRadius = 5 * scale;
-        
-        // Draw trajectory if enabled
-        if (this.showTrajectory && this.trajectory.length > 0) {
-            this.ctx.strokeStyle = this.trajectoryColor;
-            this.ctx.lineWidth = 2;
-            this.ctx.globalAlpha = 0.7;
-            this.ctx.setLineDash([5, 5]); // Dashed line for trajectory
-            
-            this.ctx.beginPath();
-            for (let i = 0; i < this.trajectory.length; i++) {
-                const point = this.trajectory[i];
-                const screenX = point.x;
-                const screenY = point.y - point.z;
-                
-                if (i === 0) {
-                    this.ctx.moveTo(screenX, screenY);
-                } else {
-                    this.ctx.lineTo(screenX, screenY);
-                }
+
+        // Expire trajectory after TTL
+        if (this.showTrajectory) {
+            const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+            if (this.trajectoryStartTime && now - this.trajectoryStartTime > (this.trajectoryTTL || 1800)) {
+                this.showTrajectory = false;
+                this.trajectory = [];
             }
-            this.ctx.stroke();
-            
-            // Reset drawing properties
-            this.ctx.globalAlpha = 1.0;
-            this.ctx.setLineDash([]);
+        }
+
+        // Draw aesthetic trajectory overlay (glow + motion dashes)
+        if (this.showTrajectory && this.trajectory.length > 1) {
+            this.drawPrettyTrajectory();
         }
         
+        // If ball is not active, skip rendering the ball itself
+        if (!this.isActive) return;
+
         // Draw shadow with better blur effect
         this.ctx.beginPath();
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
@@ -974,5 +984,133 @@ class Ball {
             }
             this.ctx.globalAlpha = 1.0;
         }
+    }
+
+    // Draw a rich trajectory: glow underlay, animated dashes, apex marker, ground projection
+    drawPrettyTrajectory() {
+        const ctx = this.ctx;
+        const traj = this.trajectory;
+        if (!traj || traj.length < 2) return;
+
+        // Precompute projected points
+        const pts = traj.map(p => ({ x: p.x, y: p.y - (p.z || 0), gY: p.y, z: p.z || 0 }));
+        const maxZ = traj.reduce((m, p) => Math.max(m, p.z || 0), 0);
+        const lofted = (this.trajectoryType || (maxZ > 35 ? 'Lofted' : 'Ground')) === 'Lofted';
+
+        // 1) Glow underlay (stronger, more vibrant)
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = this.trajectoryColor;
+        ctx.shadowBlur = lofted ? 28 : 22;
+        ctx.lineWidth = lofted ? 7.5 : 6;
+        for (let i = 0; i < pts.length - 1; i++) {
+            const a = i / (pts.length - 1);
+            const base = this.trajectoryColor;
+            const punch = 0.26 * (1 - a);
+            ctx.strokeStyle = this.colorWithAlpha(this.lightenColor(base, 12), punch);
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[i + 1].x, pts[i + 1].y);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 2) Main stroke with animated dash
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = lofted ? 3.2 : 2.6;
+        ctx.strokeStyle = this.colorWithAlpha(this.lightenColor(this.trajectoryColor, 8), 1.0);
+        const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        const dashSpeed = lofted ? 110 : 95; // px/s
+        const dashOffset = -((now - (this.trajectoryStartTime || now)) / 1000) * dashSpeed;
+        ctx.setLineDash(lofted ? [12, 7] : [9, 6]);
+        ctx.lineDashOffset = dashOffset;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        // 3) Spark markers along path (slightly brighter)
+        ctx.save();
+        for (let i = 0; i < pts.length; i += 4) {
+            const t = i / (pts.length - 1);
+            const r = lofted ? 2.6 : 2.0;
+            ctx.fillStyle = this.colorWithAlpha(this.lightenColor(this.trajectoryColor, 15), 0.35 * (1 - t));
+            ctx.beginPath();
+            ctx.arc(pts[i].x, pts[i].y, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+
+        // 4) Apex highlight for lofted shots
+        if (lofted && maxZ > 0) {
+            const apexIdx = traj.reduce((mi, p, i) => (p.z || 0) > (traj[mi].z || 0) ? i : mi, 0);
+            const apex = pts[apexIdx];
+            ctx.save();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.shadowColor = this.trajectoryColor;
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(apex.x, apex.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // 5) Ground projection ribbon (helps readability for ground shots)
+        ctx.save();
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = this.colorWithAlpha('#FFFFFF', lofted ? 0.12 : 0.22);
+        ctx.beginPath();
+        ctx.moveTo(traj[0].x, traj[0].y);
+        for (let i = 1; i < traj.length; i++) ctx.lineTo(traj[i].x, traj[i].y);
+        ctx.stroke();
+        ctx.restore();
+
+        // 6) Traveling spark(s) to add vibrancy
+        const travelDur = Math.max(600, Math.min(1600, this.trajectoryDurationMs || 1000));
+        const phases = [0, 0.45];
+        for (let k = 0; k < phases.length; k++) {
+            const phase = phases[k];
+            const tFrac = (((now - (this.trajectoryStartTime || now)) % travelDur) / travelDur + phase) % 1;
+            const idx = Math.min(pts.length - 1, Math.floor(tFrac * (pts.length - 1)));
+            const p = pts[idx];
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.shadowColor = this.lightenColor(this.trajectoryColor, 20);
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, lofted ? 2.6 : 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // Utility: color with alpha from hex
+    colorWithAlpha(hex, a) {
+        const h = (hex || '').replace('#', '');
+        const r = parseInt(h.substring(0, 2) || 'ff', 16);
+        const g = parseInt(h.substring(2, 4) || 'ff', 16);
+        const b = parseInt(h.substring(4, 6) || 'ff', 16);
+        return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, a))})`;
+    }
+
+    // Utility: lighten hex color by amount (0-100)
+    lightenColor(hex, amount = 10) {
+        const h = (hex || '').replace('#', '');
+        let r = parseInt(h.substring(0, 2) || 'ff', 16);
+        let g = parseInt(h.substring(2, 4) || 'ff', 16);
+        let b = parseInt(h.substring(4, 6) || 'ff', 16);
+        const f = Math.max(0, Math.min(100, amount)) / 100;
+        r = Math.min(255, Math.round(r + (255 - r) * f));
+        g = Math.min(255, Math.round(g + (255 - g) * f));
+        b = Math.min(255, Math.round(b + (255 - b) * f));
+        const toHex = (n) => n.toString(16).padStart(2, '0');
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     }
 }
