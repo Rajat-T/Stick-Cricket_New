@@ -59,6 +59,9 @@ class Game {
         this.scorecardDisplay = document.getElementById('scorecardDisplay');
         this.scorecardBody = document.getElementById('scorecardBody');
         this.backToGameBtn = document.getElementById('backToGameBtn');
+        this.timingMeter = document.getElementById('timingMeter');
+        this.timingMeterFill = document.getElementById('timingMeterFill');
+        this.reqRunRateEl = document.getElementById('reqRunRate');
         document.getElementById('quickPlayBtn').addEventListener('click', () => this.prepareGame('quick'));
         document.getElementById('tournamentBtn').addEventListener('click', () => this.prepareGame('tournament'));
         document.getElementById('survivalBtn').addEventListener('click', () => this.prepareGame('survival'));
@@ -303,6 +306,7 @@ class Game {
         this.scorecardBtn.style.display = 'block';
         this.scorecardBtn.style.top = '115px';
         this.scorecardBtn.style.right = '20px';
+        this.timingMeter.style.display = 'block';
         this.wicketsTaken = 0;
         this.celebrationInProgress = false; // Reset celebration state
         const difficulty = document.getElementById('difficulty').value;
@@ -794,6 +798,7 @@ class Game {
     checkHit() {
         if (this.batsman.isSwinging && this.ball.isActive && this.ball.isHittable()) {
             const result = this.ball.attemptHit(this.batsman.swingDirection);
+            this.updateTimingMeter(result.timing, result.timingScore);
             this.batsman.isSwinging = false;
             
             // Handle new dismissal types from enhanced physics
@@ -819,9 +824,8 @@ class Game {
             
             const isMishit = result.timingScore < 2;
             const isLofted = this.ball.vel.z > 40;
-            const mishitCatchProb = window.GameTuning?.catches?.mishitLoftedProb ?? 0.15;
-            const isCaught = isMishit && isLofted && Math.random() < mishitCatchProb;
-            
+            const isCaught = false;
+
             if (isCaught) {
                 this.handleWicket('Caught!', result.runs);
                 const catcher = this.fielders.sort((a, b) =>
@@ -835,6 +839,25 @@ class Game {
             } else {
                 this.score += result.runs;
                 this.updateBatsmanStats('runs', result.runs);
+
+                const isPoorShot = result.timingScore <= 1; // Early, Late, Too Early, Too Late
+                if (isPoorShot && result.runs > 0 && result.runs < 4) { // Only on singles, doubles, triples
+                    const runOutChance = 0.1; // 10% chance of a run-out on a poor shot
+                    if (Math.random() < runOutChance) {
+                        // Find the closest fielder
+                        const closestFielder = this.fielders.sort((a, b) =>
+                            Math.hypot(a.x - this.ball.pos.x, a.y - this.ball.pos.y) -
+                            Math.hypot(b.x - this.ball.pos.x, b.y - this.ball.pos.y)
+                        )[0];
+
+                        if (closestFielder) {
+                            // Animate the fielder throwing the ball to the wickets
+                            this.ball.travelTo(this.wicketsObject.x, this.wicketsObject.y);
+                            this.handleWicket('Run Out!', result.runs -1); // Batsman completes one less run
+                            return;
+                        }
+                    }
+                }
                 
                 // Check for individual batsman milestone celebrations (50 and 100)
                 this.checkIndividualMilestoneCelebration(result.runs);
@@ -882,6 +905,12 @@ class Game {
                 this.gameState = 'between_balls';
                 this.awaitingNextBall = true;
                 
+                // If match ended on this delivery (e.g., overs exhausted in chase), end gracefully
+                if (this.isGameOver()) {
+                    setTimeout(() => this.endGame(), 1500);
+                    return;
+                }
+
                 // Check if celebration is in progress and adjust delay accordingly
                 let nextBallDelay = result.runs === 0 ? 1500 : 2000;
                 if (this.celebrationInProgress) {
@@ -913,6 +942,14 @@ class Game {
             this.handleWicket('Bowled!', 0);
             return;
         }
+
+        const isSpin = this.ball.type === 'spin';
+        const outOfCrease = this.batsman.swingState > 0.5; // Approximating being out of crease
+        if (isSpin && outOfCrease && this.ball.pos.y > this.batsman.y && this.ball.pos.z < 10) {
+            this.handleWicket('Stumped!', 0);
+            return;
+        }
+
         if (this.ball.pos.y > this.canvas.height) {
             this.ball.isActive = false;
             this.showFeedback('0 · Miss', '#FFA500');
@@ -923,6 +960,13 @@ class Game {
             this.updateScoreboard();
             this.gameState = 'between_balls';
             this.awaitingNextBall = true;
+
+            // If match ended on this delivery (e.g., overs exhausted in chase), end gracefully
+            if (this.isGameOver()) {
+                setTimeout(() => this.endGame(), 1500);
+                return;
+            }
+
             setTimeout(() => {
                 // Only call nextBall if game is not paused
                 if (!this.gameLoopPaused) {
@@ -1138,6 +1182,7 @@ class Game {
     }
     endGame() {
         this.gameState = 'game_over';
+        this.timingMeter.style.display = 'none';
         let message = `Game Over! Score: ${this.score}`;
         let isWin = false;
         
@@ -1216,14 +1261,75 @@ class Game {
         this.foursEl.textContent = this.fours;
         this.sixesEl.textContent = this.sixes;
 
+        // Calculate and display Required Run Rate (Req RR) for chase modes
+        let reqRRText = '—';
+        let target = null;
+        if (this.gameMode === 'runChase' && typeof this.targetRuns === 'number') {
+            target = this.targetRuns;
+        } else if (this.gameMode === 'tournament' && this.isTournamentMode && typeof this.tournamentTarget === 'number') {
+            target = this.tournamentTarget;
+        }
+        if (target !== null && typeof this.maxOvers === 'number' && this.maxOvers > 0) {
+            const runsRequired = Math.max(0, target - this.score);
+            const ballsRemaining = Math.max(0, (this.maxOvers * 6) - this.balls);
+            if (runsRequired === 0) {
+                reqRRText = '0.00';
+            } else if (ballsRemaining > 0) {
+                const oversRemaining = ballsRemaining / 6;
+                reqRRText = (runsRequired / oversRemaining).toFixed(2);
+            } else {
+                reqRRText = '—';
+            }
+        }
+        if (this.reqRunRateEl) {
+            this.reqRunRateEl.textContent = reqRRText;
+        }
+
         // Add animation class and remove it after animation ends
-        const elementsToAnimate = [this.scoreEl, this.wicketsEl, this.oversEl, this.foursEl, this.sixesEl, this.strikeRateEl];
+        const elementsToAnimate = [this.scoreEl, this.wicketsEl, this.oversEl, this.foursEl, this.sixesEl, this.strikeRateEl, this.reqRunRateEl].filter(Boolean);
         elementsToAnimate.forEach(el => {
             el.classList.add('score-update');
             el.addEventListener('animationend', () => {
                 el.classList.remove('score-update');
             }, { once: true });
         });
+    }
+
+    updateTimingMeter(timing, timingScore) {
+        let heightPercent = 0;
+        let color = '#ff0000'; // Default red
+
+        switch (timingScore) {
+            case 3: // PERFECT!
+                heightPercent = 100;
+                color = `hsl(120, 100%, 50%)`; // Bright Green
+                break;
+            case 2: // GOOD
+                heightPercent = 80;
+                color = `hsl(60, 100%, 50%)`; // Yellow
+                break;
+            case 1: // EARLY/LATE
+                if (timing === "EARLY") {
+                    heightPercent = 60;
+                    color = `hsl(30, 100%, 50%)`; // Orange
+                } else { // LATE
+                    heightPercent = 40;
+                    color = `hsl(15, 100%, 50%)`; // Orange-Red
+                }
+                break;
+            case 0: // TOO EARLY/TOO LATE
+                if (timing === "TOO EARLY") {
+                    heightPercent = 20;
+                    color = `hsl(0, 100%, 50%)`; // Red
+                } else { // TOO LATE
+                    heightPercent = 10;
+                    color = `hsl(0, 100%, 40%)`; // Darker Red
+                }
+                break;
+        }
+
+        this.timingMeterFill.style.height = `${heightPercent}%`;
+        this.timingMeterFill.style.background = color;
     }
 
     showFeedback(text, color) {
@@ -1639,6 +1745,15 @@ class Game {
         const isComplete = tournamentData.isComplete;
         const hasNextMatch = tournamentData.currentMatch !== null;
         
+        // Start building HTML early to avoid use-before-declaration
+        let resultHTML = `
+            <div class="tournament-results-content">
+                <h2>Match Result</h2>
+                <div class="match-result">
+                    <p class="result-text">${this.lastMatchResult ? this.lastMatchResult.resultText : 'Match completed'}</p>
+                </div>
+        `;
+
         // If no next match, try to find one by completing any remaining AI matches
         if (!isComplete && !hasNextMatch) {
             this.checkTournamentProgress();
@@ -1670,14 +1785,6 @@ class Game {
         
         // Check if user can still qualify (only if tournament not complete and no current match)
         const canStillQualify = !isComplete && !hasNextMatch ? this.tournamentManager.canUserStillQualify() : false;
-        
-        let resultHTML = `
-            <div class="tournament-results-content">
-                <h2>Match Result</h2>
-                <div class="match-result">
-                    <p class="result-text">${this.lastMatchResult ? this.lastMatchResult.resultText : 'Match completed'}</p>
-                </div>
-        `;
         
         if (isComplete) {
             const userWonTournament = tournamentData.tournamentWinner && tournamentData.tournamentWinner.id === this.userTeam.id;

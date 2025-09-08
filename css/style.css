@@ -1068,6 +1068,29 @@ body {
     transform: scale(1.05);
 }
 
+#timingMeter {
+    position: absolute;
+    right: 20px;
+    top: 180px; /* Below scorecard button */
+    width: 20px;
+    height: 100px;
+    background: rgba(10, 25, 47, 0.9);
+    border: 2px solid rgba(255, 215, 0, 0.7);
+    border-radius: 10px;
+    overflow: hidden;
+    display: none; /* Hidden by default */
+    z-index: 20;
+}
+
+#timingMeterFill {
+    width: 100%;
+    height: 0; /* Starts empty */
+    background: linear-gradient(to top, #ff0000, #ff4500); /* Default to red */
+    position: absolute;
+    bottom: 0;
+    transition: height 0.3s ease, background 0.3s ease;
+}
+
 @media (max-width: 768px) {
     .game-wrapper {
         max-width: 100%;
