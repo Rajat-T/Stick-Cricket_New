@@ -580,6 +580,25 @@ class Game {
             this.scorecardBody.appendChild(row);
         });
 
+        // Add total row for batsmen
+        const totalRuns = this.batsmanStats.reduce((total, stat) => total + stat.runs, 0);
+        const totalBalls = this.batsmanStats.reduce((total, stat) => total + stat.balls, 0);
+        const totalFours = this.batsmanStats.reduce((total, stat) => total + stat.fours, 0);
+        const totalSixes = this.batsmanStats.reduce((total, stat) => total + stat.sixes, 0);
+        
+        const totalRow = document.createElement('tr');
+        totalRow.className = 'scorecard-total';
+        totalRow.innerHTML = `
+            <td><strong>Total</strong></td>
+            <td></td>
+            <td></td>
+            <td><strong>${totalRuns}</strong></td>
+            <td><strong>${totalBalls}</strong></td>
+            <td><strong>${totalFours}</strong></td>
+            <td><strong>${totalSixes}</strong></td>
+        `;
+        this.scorecardBody.appendChild(totalRow);
+
         const bowlingBody = document.getElementById('bowlingScorecardBody');
         bowlingBody.innerHTML = '';
 
@@ -620,6 +639,31 @@ class Game {
             `;
             bowlingBody.appendChild(row);
         });
+        
+        // Add total row for bowlers
+        const totalBowlerRuns = this.bowlerStats.reduce((total, stat) => total + stat.runs, 0);
+        const totalBowlerWickets = this.bowlerStats.reduce((total, stat) => total + stat.wickets, 0);
+        const totalBowlerBalls = this.bowlerStats.reduce((total, stat) => total + stat.balls, 0);
+        
+        const totalBowlerOvers = Math.floor(totalBowlerBalls / 6);
+        const totalBowlerBallsInOver = totalBowlerBalls % 6;
+        let totalOversDisplay;
+        if (totalBowlerBallsInOver === 0 && totalBowlerOvers > 0) {
+            totalOversDisplay = totalBowlerOvers.toString();
+        } else {
+            totalOversDisplay = totalBowlerOvers + '.' + totalBowlerBallsInOver;
+        }
+        
+        const totalBowlerRow = document.createElement('tr');
+        totalBowlerRow.className = 'scorecard-total';
+        totalBowlerRow.innerHTML = `
+            <td><strong>Total</strong></td>
+            <td><strong>${totalOversDisplay}</strong></td>
+            <td><strong>${totalBowlerRuns}</strong></td>
+            <td><strong>${totalBowlerWickets}</strong></td>
+            <td></td>
+        `;
+        bowlingBody.appendChild(totalBowlerRow);
     }
     initInput() {
         this.input = {
@@ -853,6 +897,8 @@ class Game {
                         if (closestFielder) {
                             // Animate the fielder throwing the ball to the wickets
                             this.ball.travelTo(this.wicketsObject.x, this.wicketsObject.y);
+                            // Adjust the score to reflect one less run (the batsman who got run out doesn't get credit for that run)
+                            this.score -= 1;
                             this.handleWicket('Run Out!', result.runs -1); // Batsman completes one less run
                             return;
                         }
@@ -1247,6 +1293,56 @@ class Game {
             }
         }, 3000);
     }
+    // Helper function to verify score consistency
+    verifyScoreConsistency() {
+        // Calculate total runs from batsman stats
+        const totalBatsmanRuns = this.batsmanStats.reduce((total, stat) => total + stat.runs, 0);
+        
+        // Calculate total runs conceded by bowlers
+        const totalBowlerRuns = this.bowlerStats.reduce((total, stat) => total + stat.runs, 0);
+        
+        // Log for debugging
+        if (totalBatsmanRuns !== this.score) {
+            console.warn(`Score mismatch: Game score (${this.score}) != Batsman stats total (${totalBatsmanRuns})`);
+        }
+        
+        // Note: Bowler runs should match game score in most cases, but there might be edge cases
+        // where they don't (like extras that aren't attributed to a specific bowler)
+        return {
+            score: this.score,
+            batsmanTotal: totalBatsmanRuns,
+            bowlerTotal: totalBowlerRuns,
+            scoreMatchesBatsmen: totalBatsmanRuns === this.score
+        };
+    }
+
+    // Function to test scoring consistency (for debugging)
+    testScoringConsistency() {
+        console.log("=== SCORING CONSISTENCY TEST ===");
+        const consistency = this.verifyScoreConsistency();
+        console.log(`Game Score: ${consistency.score}`);
+        console.log(`Batsman Total: ${consistency.batsmanTotal}`);
+        console.log(`Bowler Total: ${consistency.bowlerTotal}`);
+        console.log(`Score Matches Batsmen: ${consistency.scoreMatchesBatsmen}`);
+        
+        // Detailed batsman stats
+        console.log("Batsman Details:");
+        this.batsmanStats.forEach((stat, index) => {
+            console.log(`  ${index + 1}. ${stat.name}: ${stat.runs} runs from ${stat.balls} balls (${stat.fours} 4s, ${stat.sixes} 6s)${stat.howOut ? ' - ' + stat.howOut : ''}`);
+        });
+        
+        // Detailed bowler stats
+        console.log("Bowler Details:");
+        this.bowlerStats.forEach((stat, index) => {
+            const overs = Math.floor(stat.balls / 6);
+            const balls = stat.balls % 6;
+            console.log(`  ${index + 1}. ${stat.name}: ${stat.runs} runs (${overs}.${balls} overs, ${stat.wickets} wickets)`);
+        });
+        
+        console.log("=== END TEST ===");
+        return consistency;
+    }
+
     updateScoreboard() {
         this.scoreEl.textContent = this.score;
         this.wicketsEl.textContent = this.wicketsTaken + '/' + this.maxWickets;
@@ -1283,6 +1379,13 @@ class Game {
         }
         if (this.reqRunRateEl) {
             this.reqRunRateEl.textContent = reqRRText;
+        }
+
+        // Verify score consistency (for debugging)
+        const consistency = this.verifyScoreConsistency();
+        if (!consistency.scoreMatchesBatsmen) {
+            // Only log detailed info if there's a mismatch
+            this.testScoringConsistency();
         }
 
         // Add animation class and remove it after animation ends
