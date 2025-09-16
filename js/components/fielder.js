@@ -4,43 +4,69 @@ class Fielder extends Character {
         const H = ctx.canvas.height;
         super(ctx, W * relativeX, H * relativeY, 30, 50);
         this.isCatching = false;
+        this.isDiving = false;
         this.originalX = W * relativeX;
         this.originalY = H * relativeY;
     }
+
     update(dt, ball) {
-        // The fielder only considers moving when the ball has been hit and
-        // is travelling upward fast enough, indicating a potential catch.
-        if (ball.isHit && ball.vel.z > 30) {
+        if (ball.isHit) {
             const dist = Math.hypot(this.x - ball.pos.x, this.y - ball.pos.y);
-            // Once the ball is within 80 pixels, the fielder moves toward it.
-            if (dist < 80) {
-                this.x += (ball.pos.x - this.x) * 0.05;
-                this.y += (ball.pos.y - this.y) * 0.05;
-                // A catch is detected when very close to the ball and it is
-                // descending near ground level (dist < 15 and z < 20).
-                if (dist < 15 && ball.pos.z < 20 && ball.vel.z < 0) {
-                    this.isCatching = true;
-                    ball.vel.x *= 0.2;
-                    ball.vel.y *= 0.2;
-                    ball.vel.z = 0;
-                    ball.isActive = false;
-                    if (typeof game !== 'undefined') {
-                        // Inform the game of a successful catch during play.
-                        if (typeof game.handleWicket === 'function' && game.gameState === 'playing') {
+
+            // CATCHING LOGIC (for lofted balls)
+            if (ball.vel.z > 10) { // If the ball is in the air
+                if (dist < 100) { // If the ball is close
+                    this.x += (ball.pos.x - this.x) * 0.08;
+                    this.y += (ball.pos.y - this.y) * 0.08;
+
+                    if (dist < 20 && ball.pos.z < 25 && ball.vel.z < 0) {
+                        this.isCatching = true;
+                        ball.vel.x *= 0.1;
+                        ball.vel.y *= 0.1;
+                        ball.vel.z = 0;
+                        ball.isActive = false;
+                        if (typeof game !== 'undefined' && game.gameState === 'playing') {
                             game.handleWicket('Caught!', 0);
-                        // Otherwise, just show visual feedback of the catch.
-                        } else if (typeof game.showFeedback === 'function') {
-                            game.showFeedback('Catch!', '#FF4136');
+                        }
+                    }
+                }
+            }
+            // GROUND FIELDING LOGIC
+            else if (ball.pos.z <= 0) { // If the ball is on the ground
+                if (dist < 150) { // If the ball is in the fielder's vicinity
+                    this.x += (ball.pos.x - this.x) * 0.1;
+                    this.y += (ball.pos.y - this.y) * 0.1;
+
+                    if (dist < 15) {
+                        // MISFIELD CHANCE
+                        const difficulty = game.difficulty.name || 'pro';
+                        let misfieldChance = 0;
+                        if (difficulty === 'amateur') misfieldChance = 0.05;
+                        else if (difficulty === 'pro') misfieldChance = 0.1;
+                        else misfieldChance = 0.15;
+
+                        if (Math.random() < misfieldChance) {
+                            // Misfield! Ball goes past the fielder
+                            this.isDiving = false;
+                        } else {
+                            // Successful stop
+                            this.isDiving = true;
+                            ball.vel.x *= 0.05;
+                            ball.vel.y *= 0.05;
+                            ball.isActive = false;
                         }
                     }
                 }
             }
         } else {
+            // Return to original position
             this.x += (this.originalX - this.x) * 0.05;
             this.y += (this.originalY - this.y) * 0.05;
             this.isCatching = false;
+            this.isDiving = false;
         }
     }
+
     draw() {
         const W = this.ctx.canvas.width;
         const H = this.ctx.canvas.height;
@@ -128,6 +154,12 @@ class Fielder extends Character {
             this.ctx.font = 'bold 14px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.fillText('CATCH!', 0, -this.h - 20);
+        } else if (this.isDiving) {
+            this.ctx.rotate(Math.PI / 4); // Diving angle
+            this.ctx.fillStyle = '#01FF70';
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('SAVE!', 0, -this.h - 10);
         }
         
         this.ctx.restore();
