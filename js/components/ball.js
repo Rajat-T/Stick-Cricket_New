@@ -90,13 +90,17 @@ class Ball {
         if (bowlingStyle) {
             // Override type based on actual bowling style and add variations
             if (bowlingStyle === 'Fast') {
-                if (this.surpriseDelivery && Math.random() < 0.3) {
+                if (Math.random() < 0.2) { // 20% chance for special delivery
+                    this.type = Math.random() < 0.5 ? 'yorker' : 'bouncer';
+                } else if (this.surpriseDelivery && Math.random() < 0.3) {
                     this.type = 'medium'; // Slower ball variation
                 } else {
                     this.type = 'fast';
                 }
             } else if (bowlingStyle === 'Fast Medium') {
-                if (this.surpriseDelivery && Math.random() < 0.4) {
+                if (Math.random() < 0.1) { // 10% chance for special delivery
+                    this.type = Math.random() < 0.5 ? 'yorker' : 'bouncer';
+                } else if (this.surpriseDelivery && Math.random() < 0.4) {
                     this.type = Math.random() < 0.5 ? 'fast' : 'medium'; // Speed variations
                 } else {
                     this.type = 'medium';
@@ -148,10 +152,16 @@ class Ball {
         const r = Math.random();
         let pitchY;
         const difficultyPitchFactor = difficultyLevel === 'amateur' ? 0.15 : difficultyLevel === 'pro' ? 0.1 : 0.05;
-        
-        if (r < 0.15) pitchY = H * (0.72 + difficultyPitchFactor);
-        else if (r < 0.8) pitchY = H * (0.80 + difficultyPitchFactor);
-        else pitchY = H * (0.88 + difficultyPitchFactor);
+
+        if (this.type === 'yorker') {
+            pitchY = H * (0.92 + (Math.random() - 0.5) * 0.02); // Pitches very close to the batsman
+        } else if (this.type === 'bouncer') {
+            pitchY = H * (0.7 + (Math.random() - 0.5) * 0.05); // Pitches short
+        } else {
+            if (r < 0.15) pitchY = H * (0.72 + difficultyPitchFactor);
+            else if (r < 0.8) pitchY = H * (0.80 + difficultyPitchFactor);
+            else pitchY = H * (0.88 + difficultyPitchFactor);
+        }
         
         const lineOffset = (side === 'off' ? -24 : 24) + (Math.random() - 0.5) * 18;
         const targetXAtStumps = W / 2 + lineOffset;
@@ -821,6 +831,7 @@ class Ball {
                 let e = this.BOUNCE_MED;
                 if (this.type === "fast") e = this.BOUNCE_FAST;
                 else if (this.type === "spin") e = this.BOUNCE_SPIN;
+                else if (this.type === "bouncer") e = 0.7; // Higher bounce for bouncers
                 const angleFactor = 1 - 0.3 * (angle / (Math.PI / 2));
                 const speedFactor = 1 - Math.min(speed / 600, 1) * 0.25;
                 e *= angleFactor * speedFactor;
