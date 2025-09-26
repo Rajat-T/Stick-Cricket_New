@@ -27,6 +27,7 @@ class Game {
         this.bowlerStats = [];
         this.previousOverBowler = null; // Track who bowled the previous over
         this.awaitingNextBall = false;
+        this.justDeliveredBall = false; // Track if we just delivered a ball to prevent race conditions
         this.tournamentManager = null;
         this.isTournamentMode = false;
         this.tournamentTarget = null;
@@ -732,7 +733,7 @@ class Game {
         }
 
         if ((this.gameState === 'playing' || this.gameState === 'between_balls') &&
-            !this.ball.isActive && !this.awaitingNextBall && !this.isGameOver()) {
+            !this.ball.isActive && !this.awaitingNextBall && !this.justDeliveredBall && !this.isGameOver()) {
             this.awaitingNextBall = true;
             setTimeout(() => {
                 // Only call nextBall if game is not paused
@@ -847,7 +848,9 @@ class Game {
             
             // Handle new dismissal types from enhanced physics
             if (result.dismissal) {
-                this.handleWicket(result.dismissal, result.runs);
+                // For dismissals during a hit, the runs were already added to the batsman,
+                // so we don't need to add them again in handleWicket
+                this.handleWicket(result.dismissal, 0);
                 if (result.dismissal === 'Caught') {
                     // Handle edge catches
                     const catcher = this.fielders.sort((a, b) =>
@@ -899,6 +902,14 @@ class Game {
                             this.ball.travelTo(this.wicketsObject.x, this.wicketsObject.y);
                             // Adjust the score to reflect one less run (the batsman who got run out doesn't get credit for that run)
                             this.score -= 1;
+                            // For run-out, we need to properly handle the batsman stats to avoid double counting
+                            // Remove the previously added runs and add the adjusted runs
+                            const currentBatsmanIndex = this.batsmanStats.findIndex(stat => stat.howOut === null || stat.howOut === undefined);
+                            if (currentBatsmanIndex !== -1) {
+                                const currentBatsman = this.batsmanStats[currentBatsmanIndex];
+                                // Adjust the batsman's runs by removing the original runs and adding the adjusted ones
+                                currentBatsman.runs = currentBatsman.runs - result.runs + (result.runs - 1);
+                            }
                             this.handleWicket('Run Out!', result.runs -1); // Batsman completes one less run
                             return;
                         }
@@ -1098,9 +1109,11 @@ class Game {
             if (value === 4) batsmanStatEntry.fours += 1;
             if (value === 6) batsmanStatEntry.sixes += 1;
         } else if (eventType === 'wicket') {
-            // Wicket: record dismissal details and any runs off the wicket ball.
+            // Wicket: record dismissal details and final runs for this ball
+            // For wickets where runs were already recorded, this updates the final result of the ball
             batsmanStatEntry.howOut = value;
             batsmanStatEntry.balls += 1;
+            // Only add the runs that were actually completed (this may adjust for cases like run-out)
             batsmanStatEntry.runs += runsScored;
             if (runsScored === 4) batsmanStatEntry.fours += 1;
             if (runsScored === 6) batsmanStatEntry.sixes += 1;
@@ -1155,6 +1168,7 @@ class Game {
     // Reset state and start the next delivery
     nextBall() {
         this.awaitingNextBall = false; // clear waiting state between balls
+        this.justDeliveredBall = true; // We're about to deliver a ball
         // Only resume game loop if it wasn't intentionally paused (e.g., for scorecard)
         if (!this.scorecardDisplay || this.scorecardDisplay.style.display !== 'flex') {
             this.gameLoopPaused = false; // resume game loop for the new ball
@@ -1202,6 +1216,11 @@ class Game {
         
         // Pass bowler type and bowling style information to ball
         this.ball.bowl(ballType, side, this.currentBowler?.role, this.currentBowler?.bowlingStyle);
+        
+        // Reset the flag shortly after the ball is bowled
+        setTimeout(() => {
+            this.justDeliveredBall = false;
+        }, 100); // Small buffer time to ensure ball is active
     }
     isGameOver() {
         const oversBowled = Math.floor(this.balls / 6);
