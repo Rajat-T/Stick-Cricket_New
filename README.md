@@ -8,9 +8,11 @@ A browser-based stick cricket game inspired by the Indian Premier League. The pr
 - **Authentic Teams** – Choose from CSK, MI, RCB, KKR, GT, and SRH with real player names.
 - **Responsive Canvas Graphics** – Animated stick figures, ball physics, crowd effects, and dynamic scoreboards.
 - **Keyboard & Touch Controls** – Arrow keys (← → ↑ ↓) or mobile taps for shot selection.
-- **Audio/Visual Feedback** – Particle effects, crowd animation, and synthesized sound.
+- **Audio/Visual Feedback** – Particle effects, crowd animation, and synthesized sound with real audio files.
 - **High‑Score Tracking** – Local storage remembers your personal bests.
 - **Tunable Physics** – Realistic wicket logic with centralized config for edges, LBW, catches, and timing.
+- **Audio System** – HTML5 Audio API with fallback support and real cricket sound effects.
+- **Visual Enhancements** – Day/night matches, multiple stadiums, and improved UI animations.
 
 ## Tournament Details
 - Six teams split into two groups.
@@ -24,6 +26,19 @@ A browser-based stick cricket game inspired by the Indian Premier League. The pr
 3. Pick a mode, choose your team, and start swinging.
 
 No build step or dependencies are required.
+
+## Audio System
+The game features an enhanced audio system with:
+- **Web Audio API**: Primary audio system for dynamic sound generation
+- **HTML5 Audio**: Fallback support for browsers with limited Web Audio support
+- **Real Cricket Sounds**: Authentic sound effects for sixes and wickets
+- **Error Handling**: Graceful fallback when audio context cannot be initialized
+- **Audio Testing**: Use `audio_test.html` to debug audio issues
+
+### Audio Files
+- `Music/Six_hit.mp3` - Sound effect for hitting a six
+- `Music/Wicket_fallen.mp3` - Sound effect for wicket falling
+- Additional sounds can be added to the `Music/` directory
 
 ## Controls
 - **Batting:** use the arrow keys for different shots.
@@ -40,6 +55,10 @@ js/tournament.js     # Tournament logic, standings, and simulations
 js/teams.js          # Team and player definitions
 js/components/*.js   # Ball, bat, bowler, fielder, stadium, wickets, etc.
 js/config.js         # Central gameplay tuning (edges/LBW/catches/timing/wickets)
+Music/               # Audio files for sound effects (Six_hit.mp3, Wicket_fallen.mp3)
+audio_test.html      # Audio testing page for debugging sound system
+dataset/             # Additional game data and resources
+scripts/             # Utility scripts
 ```
 
 ## Technologies
@@ -47,6 +66,8 @@ js/config.js         # Central gameplay tuning (edges/LBW/catches/timing/wickets
 - CSS3 animations and responsive design
 - Vanilla JavaScript (ES6+)
 - Local storage for persistence
+- Web Audio API for sound effects
+- HTML5 Audio for fallback support
 
 ## Gameplay Physics & Tuning
 
@@ -105,3 +126,11 @@ The repository is explicitly open for use in AI and machine‑learning research.
 
 ## Credits
 Created by Rajat-T using AI coding assistants. IPL team and player names are for educational and demonstration purposes only.
+
+## Recent Updates
+- **Audio System**: Complete overhaul with Web Audio API and real sound effects
+- **Physics Improvements**: Enhanced ball physics and wicket logic
+- **UI Enhancements**: Better animations and visual feedback
+- **Audio Testing**: Added dedicated audio testing page
+- **Error Handling**: Improved fallback systems for audio initialization
+- **Visual Polish**: Day/night match conditions and multiple stadium options

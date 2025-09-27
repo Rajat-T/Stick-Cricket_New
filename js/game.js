@@ -5,10 +5,28 @@ class Game {
         this.wrapper = document.getElementById('gameWrapper');
         this.gameState = 'menu';
         this.lastTime = 0;
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        this.particles = [];
-        this.crowd = [];
-        this.initCrowd();
+        // Initialize audio system with fallback
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.particles = [];
+            this.crowd = [];
+            this.initCrowd();
+            this.soundBuffers = {};
+            this.isWaitingForSound = false;
+
+            // Initialize audio system with error handling
+            this.setupAudioContext();
+            this.loadSoundFiles();
+        } catch (error) {
+            console.error('Error initializing audio system:', error);
+            // Fallback: create dummy audio system so game doesn't break
+            this.audioContext = null;
+            this.particles = [];
+            this.crowd = [];
+            this.initCrowd();
+            this.soundBuffers = {};
+            this.isWaitingForSound = false;
+        }
         this.initUI();
         this.initInput();
         this.highScore = localStorage.getItem('ultimateCricketHighScore') || 0;
@@ -63,6 +81,10 @@ class Game {
         this.timingMeter = document.getElementById('timingMeter');
         this.timingMeterFill = document.getElementById('timingMeterFill');
         this.reqRunRateEl = document.getElementById('reqRunRate');
+
+        // Add audio context resume handlers for user interaction
+        this.setupAudioContextHandlers();
+
         document.getElementById('quickPlayBtn').addEventListener('click', () => this.prepareGame('quick'));
         document.getElementById('tournamentBtn').addEventListener('click', () => this.prepareGame('tournament'));
         document.getElementById('survivalBtn').addEventListener('click', () => this.prepareGame('survival'));
@@ -939,6 +961,13 @@ class Game {
                             setTimeout(() => this.wrapper.style.animation = '', 500);
                             // Extra particles for sixes
                             this.createBoundaryParticles(this.ball.pos.x, 50, 20, '#FF4136');
+                            // Play six hit sound but don't wait for it
+                            console.log('🔊 Starting six sound playback...');
+                            this.playSoundFile('six_hit', 0.8).then(() => {
+                                console.log('✅ Six sound finished');
+                            }).catch((error) => {
+                                console.warn('⚠️ Six sound failed:', error);
+                            });
                         }
                     } else {
                         // Regular particles for 1s, 2s, 3s
@@ -1020,11 +1049,23 @@ class Game {
         }
     }
     handleWicket(type, runsScoredOnWicket) {
-        // 1. Play wicket sound effects followed by a subdued cheer.
-        this.playSound('wicket', 1, 0.6);
-        this.playSound('cheer', 0.8, 0.3);
+        console.log('🏏 Wicket handler called - type:', type);
 
-        // 2. Update all relevant statistics for the dismissal.
+        // 1. Play wicket sound effects
+        this.playSound('wicket', 1, 0.6);
+
+        // 2. Play the sound file but don't wait for it - just play and continue
+        console.log('🔊 Starting wicket sound playback...');
+        this.playSoundFile('wicket_fallen', 0.7).then(() => {
+            console.log('✅ Wicket sound finished');
+        }).catch((error) => {
+            console.warn('⚠️ Wicket sound failed:', error);
+        });
+
+        // 3. Continue with normal wicket processing without waiting
+        console.log('🚀 Continuing with wicket processing...');
+
+        // 4. Update all relevant statistics for the dismissal.
         this.wicketsTaken++;
         this.updateBatsmanStats('wicket', type, runsScoredOnWicket);
         this.recordBallOutcome('W');
@@ -2223,5 +2264,283 @@ class Game {
         gainNode.connect(this.audioContext.destination);
         oscillator.start();
         oscillator.stop(this.audioContext.currentTime + 1);
+    }
+
+    setupAudioContext() {
+        if (!this.audioContext) {
+            console.warn('AudioContext not available, skipping setup');
+            return;
+        }
+        console.log(`AudioContext initialized with state: ${this.audioContext.state}`);
+
+        // Log state changes
+        this.audioContext.onstatechange = () => {
+            console.log(`AudioContext state changed to: ${this.audioContext.state}`);
+        };
+    }
+
+    setupAudioContextHandlers() {
+        // Resume AudioContext on user interaction (required by browsers)
+        const resumeAudioContext = () => {
+            if (this.audioContext.state === 'suspended') {
+                console.log('Resuming AudioContext due to user interaction');
+                this.audioContext.resume().then(() => {
+                    console.log('AudioContext resumed successfully');
+                }).catch(err => {
+                    console.error('Failed to resume AudioContext:', err);
+                });
+            }
+        };
+
+        // Add click handlers to resume audio context
+        const buttons = ['quickPlayBtn', 'tournamentBtn', 'survivalBtn', 'challengeBtn', 'runChaseBtn', 'startGameBtn'];
+        buttons.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.addEventListener('click', resumeAudioContext, { once: false });
+            }
+        });
+
+        // Also handle key presses for gameplay
+        document.addEventListener('keydown', resumeAudioContext, { once: false });
+    }
+
+    loadSoundFiles() {
+        if (!this.audioContext) {
+            console.warn('AudioContext not available, skipping sound loading');
+            return;
+        }
+
+        console.log('Loading sound files...');
+        // Initialize HTML5 Audio elements as fallback
+        try {
+            this.sixAudio = new Audio('Music/Six_hit.mp3');
+            this.wicketAudio = new Audio('Music/Wicket_fallen.mp3');
+
+            // Set up audio element event handlers
+            this.setupAudioElements();
+
+            // Also try Web Audio API for better control
+            this.loadWebAudioFiles();
+        } catch (error) {
+            console.error('Error loading sound files:', error);
+            // Don't break the game if audio loading fails
+        }
+    }
+
+    setupAudioElements() {
+        // Set up HTML5 Audio elements
+        this.sixAudio.addEventListener('canplaythrough', () => {
+            console.log('✅ HTML5 Audio: Six sound ready to play');
+        });
+
+        this.sixAudio.addEventListener('error', (e) => {
+            console.error('❌ HTML5 Audio: Error loading six sound:', e);
+        });
+
+        this.wicketAudio.addEventListener('canplaythrough', () => {
+            console.log('✅ HTML5 Audio: Wicket sound ready to play');
+        });
+
+        this.wicketAudio.addEventListener('error', (e) => {
+            console.error('❌ HTML5 Audio: Error loading wicket sound:', e);
+        });
+
+        // Preload the audio files
+        this.sixAudio.preload = 'auto';
+        this.wicketAudio.preload = 'auto';
+
+        // Set volume
+        this.sixAudio.volume = 0.8;
+        this.wicketAudio.volume = 0.7;
+    }
+
+    loadWebAudioFiles() {
+        // Try Web Audio API as primary method
+        const sixPaths = [
+            'Music/Six_hit.mp3',
+            './Music/Six_hit.mp3',
+            '/Music/Six_hit.mp3'
+        ];
+
+        const wicketPaths = [
+            'Music/Wicket_fallen.mp3',
+            './Music/Wicket_fallen.mp3',
+            '/Music/Wicket_fallen.mp3'
+        ];
+
+        this.loadSoundWithFallback('six_hit', sixPaths);
+        this.loadSoundWithFallback('wicket_fallen', wicketPaths);
+    }
+
+    loadSoundFile(name, url) {
+        console.log(`Attempting to load: ${url}`);
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => this.audioContext.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                this.soundBuffers[name] = audioBuffer;
+                console.log(`✅ Successfully loaded sound file: ${name} (${audioBuffer.duration.toFixed(2)}s)`);
+            })
+            .catch(error => {
+                console.error(`❌ Error loading sound file ${name}:`, error);
+            });
+    }
+
+    async playSoundFile(soundName, volume = 0.7) {
+        console.log(`🔊 Attempting to play sound: ${soundName}`);
+
+        // Simple HTML5 Audio approach - most reliable
+        return new Promise((resolve) => {
+            try {
+                let audioPath = '';
+                if (soundName === 'six_hit') {
+                    audioPath = 'Music/Six_hit.mp3';
+                } else if (soundName === 'wicket_fallen') {
+                    audioPath = 'Music/Wicket_fallen.mp3';
+                }
+
+                if (!audioPath) {
+                    console.warn(`Unknown sound: ${soundName}`);
+                    resolve();
+                    return;
+                }
+
+                // Create audio element on demand
+                const audio = new Audio(audioPath);
+                audio.volume = volume;
+
+                // Set up quick timeout to ensure game continues
+                const timeoutId = setTimeout(() => {
+                    console.log(`Audio playback timeout for: ${soundName}`);
+                    audio.removeEventListener('ended', onEnded);
+                    audio.removeEventListener('error', onError);
+                    resolve();
+                }, 3000); // 3 second timeout
+
+                const onEnded = () => {
+                    clearTimeout(timeoutId);
+                    console.log(`✅ Audio finished: ${soundName}`);
+                    resolve();
+                };
+
+                const onError = (e) => {
+                    clearTimeout(timeoutId);
+                    console.warn(`⚠️ Audio error for ${soundName}:`, e);
+                    resolve();
+                };
+
+                audio.addEventListener('ended', onEnded);
+                audio.addEventListener('error', onError);
+
+                // Try to play
+                const playPromise = audio.play();
+                if (playPromise) {
+                    playPromise.catch(() => {
+                        clearTimeout(timeoutId);
+                        console.warn(`⚠️ Audio play() failed for ${soundName}`);
+                        resolve();
+                    });
+                }
+            } catch (error) {
+                console.error(`❌ Error in playSoundFile for ${soundName}:`, error);
+                resolve();
+            }
+        });
+    }
+
+    playHTML5Audio(audioElement, soundName, volume) {
+        return new Promise((resolve) => {
+            try {
+                console.log(`🎵 Playing ${soundName} using HTML5 Audio`);
+
+                // Set volume
+                audioElement.volume = volume;
+
+                // Reset audio to beginning
+                audioElement.currentTime = 0;
+
+                // Set up ended event handler
+                const onEnded = () => {
+                    console.log(`✅ HTML5 Audio finished playing: ${soundName}`);
+                    audioElement.removeEventListener('ended', onEnded);
+                    resolve();
+                };
+
+                audioElement.addEventListener('ended', onEnded);
+
+                // Handle errors
+                const onError = (e) => {
+                    console.error(`❌ HTML5 Audio error playing ${soundName}:`, e);
+                    audioElement.removeEventListener('error', onError);
+                    audioElement.removeEventListener('ended', onEnded);
+                    resolve();
+                };
+
+                audioElement.addEventListener('error', onError);
+
+                // Play the audio
+                const playPromise = audioElement.play();
+
+                // Handle play() promise (returns promise in modern browsers)
+                if (playPromise) {
+                    playPromise.then(() => {
+                        console.log(`✅ HTML5 Audio started playing: ${soundName}`);
+                    }).catch(error => {
+                        console.error(`❌ HTML5 Audio play() failed for ${soundName}:`, error);
+                        audioElement.removeEventListener('ended', onEnded);
+                        audioElement.removeEventListener('error', onError);
+                        resolve();
+                    });
+                }
+            } catch (error) {
+                console.error(`❌ Error playing HTML5 Audio ${soundName}:`, error);
+                resolve();
+            }
+        });
+    }
+
+    async playWebAudio(soundName, volume = 0.7) {
+        console.log(`🔊 Attempting to play ${soundName} using Web Audio API`);
+
+        // Check if AudioContext is suspended and resume it
+        if (this.audioContext.state === 'suspended') {
+            console.log('AudioContext is suspended, resuming...');
+            await this.audioContext.resume();
+        }
+
+        if (!this.soundBuffers[soundName]) {
+            console.warn(`⚠️ Sound file ${soundName} not loaded yet in Web Audio API`);
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+            try {
+                const source = this.audioContext.createBufferSource();
+                const gainNode = this.audioContext.createGain();
+
+                source.buffer = this.soundBuffers[soundName];
+                gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+
+                source.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                source.onended = () => {
+                    console.log(`✅ Web Audio finished playing: ${soundName}`);
+                    resolve();
+                };
+
+                console.log(`🎵 Starting Web Audio playback of: ${soundName} at volume ${volume}`);
+                source.start();
+            } catch (error) {
+                console.error(`❌ Error playing Web Audio ${soundName}:`, error);
+                resolve();
+            }
+        });
     }
 }
