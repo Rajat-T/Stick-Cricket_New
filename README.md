@@ -33,7 +33,6 @@ The game features an enhanced audio system with:
 - **HTML5 Audio**: Fallback support for browsers with limited Web Audio support
 - **Real Cricket Sounds**: Authentic sound effects for sixes and wickets
 - **Error Handling**: Graceful fallback when audio context cannot be initialized
-- **Audio Testing**: Use `audio_test.html` to debug audio issues
 
 ### Audio Files
 - `Music/Six_hit.mp3` - Sound effect for hitting a six
@@ -56,7 +55,6 @@ js/teams.js          # Team and player definitions
 js/components/*.js   # Ball, bat, bowler, fielder, stadium, wickets, etc.
 js/config.js         # Central gameplay tuning (edges/LBW/catches/timing/wickets)
 Music/               # Audio files for sound effects (Six_hit.mp3, Wicket_fallen.mp3)
-audio_test.html      # Audio testing page for debugging sound system
 dataset/             # Additional game data and resources
 scripts/             # Utility scripts
 ```
@@ -131,6 +129,5 @@ Created by Rajat-T using AI coding assistants. IPL team and player names are for
 - **Audio System**: Complete overhaul with Web Audio API and real sound effects
 - **Physics Improvements**: Enhanced ball physics and wicket logic
 - **UI Enhancements**: Better animations and visual feedback
-- **Audio Testing**: Added dedicated audio testing page
 - **Error Handling**: Improved fallback systems for audio initialization
 - **Visual Polish**: Day/night match conditions and multiple stadium options
