@@ -11,6 +11,9 @@
     --batsman-color: #3498db;
     --bowler-color: #c0392b;
     --fielder-color: #e74c3c;
+    --accent-color: #FF6B6B;
+    --success-color: #00C896;
+    --warning-color: #FFA726;
 }
 
 * {
@@ -142,6 +145,7 @@ body {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6),
         inset 0 0 20px rgba(255, 215, 0, 0.3);
+    filter: brightness(1.05);
 }
 
 #scoreboard .score-item {
@@ -358,6 +362,7 @@ body {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5),
         0 0 30px rgba(255, 215, 0, 0.5);
     background: linear-gradient(145deg, #FFD700, #FFA500);
+    filter: brightness(1.1);
 }
 
 .menu-btn:hover::before {
@@ -402,6 +407,7 @@ body {
 #difficulty:hover {
     transform: scale(1.05);
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    filter: brightness(1.1);
 }
 
 #highScore {
@@ -454,6 +460,7 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5);
     background: linear-gradient(145deg, #2a4a9a, #0A192F);
+    filter: brightness(1.1);
 }
 
 .instructions {
@@ -492,6 +499,7 @@ body {
 .instruction-card:hover {
     transform: translateY(-5px);
     border-color: rgba(255, 215, 0, 0.5);
+    filter: brightness(1.05);
 }
 
 .instruction-card h3 {
@@ -538,6 +546,7 @@ body {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6),
         inset 0 0 20px rgba(255, 215, 0, 0.3);
+    filter: brightness(1.05);
 }
 
 #overTracker h4 {
@@ -571,6 +580,7 @@ body {
 
 .ball-outcome:hover {
     transform: scale(1.1);
+    filter: brightness(1.2);
 }
 
 .ball-outcome.wicket {
@@ -659,6 +669,7 @@ body {
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5),
         0 0 20px rgba(255, 215, 0, 0.3);
     border-color: var(--secondary-color);
+    filter: brightness(1.05);
 }
 
 .team-card.selected {
@@ -691,6 +702,7 @@ body {
 .team-logo:hover {
     transform: scale(1.1);
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    filter: brightness(1.1);
 }
 
 .team-name {
@@ -711,6 +723,7 @@ body {
 .team-name:hover {
     color: var(--secondary-color);
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+    filter: brightness(1.1);
 }
 
 #teamDisplay {
@@ -810,6 +823,7 @@ body {
     background: rgba(30, 58, 138, 0.9);
     transform: translateX(5px);
     border-color: rgba(255, 215, 0, 0.5);
+    filter: brightness(1.05);
 }
 
 .player-name {
@@ -858,6 +872,7 @@ body {
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5),
         0 0 35px rgba(255, 215, 0, 0.6);
     background: linear-gradient(145deg, #FFD700, #FFA500);
+    filter: brightness(1.1);
 }
 
 #bowlerInfo {
@@ -924,6 +939,7 @@ body {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5),
         0 0 20px rgba(255, 215, 0, 0.5);
     background: linear-gradient(145deg, #FFD700, #FFA500);
+    filter: brightness(1.1);
 }
 
 #scorecardDisplay {
@@ -1066,6 +1082,7 @@ body {
 #backToGameBtn:hover {
     background: linear-gradient(145deg, #FFB300, #FFD700);
     transform: scale(1.05);
+    filter: brightness(1.1);
 }
 
 #timingMeter {
@@ -1744,5 +1761,128 @@ body {
     .points-table td {
         padding: 6px 3px;
         font-size: 0.75rem;
+    }
+}
+
+/* Subtle UI Improvements */
+
+/* Enhanced button interactions */
+.menu-btn:active {
+    transform: translateY(-2px) scale(0.98);
+    filter: brightness(0.95);
+}
+
+.team-card:active {
+    transform: translateY(-3px) scale(0.98);
+}
+
+#startGameBtn:active {
+    transform: translateY(-2px) scale(0.98);
+}
+
+/* Subtle focus states for better accessibility */
+.menu-btn:focus,
+#startGameBtn:focus,
+#scorecardBtn:focus,
+#backToGameBtn:focus,
+.team-card:focus,
+.key:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+.menu-btn,
+.team-card,
+#startGameBtn,
+#scorecardBtn,
+#backToGameBtn,
+.key,
+.ball-outcome,
+.team-logo,
+.player-item,
+.instruction-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced visual feedback for score updates */
+.score-update {
+    animation: scorePulse 0.5s ease-in-out;
+}
+
+@keyframes scorePulse {
+    0% {
+        transform: scale(1);
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    }
+    50% {
+        transform: scale(1.15);
+        text-shadow: 0 0 20px rgba(255, 215, 0, 1);
+    }
+    100% {
+        transform: scale(1);
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    }
+}
+
+/* Subtle loading animation */
+.loading-pulse {
+    animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loadingPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Enhanced hover states with glow effects */
+.menu-btn:hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 0.6s ease-in-out;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Better scrollbar styling for modern browsers */
+.player-list::-webkit-scrollbar-thumb:hover {
+    background: #FFA500;
+    filter: brightness(1.2);
+}
+
+/* Enhanced visual feedback for tournament buttons */
+.tournament-btn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* Subtle animation for game title on load */
+.game-title {
+    animation: titleFadeIn 1s ease-out;
+}
+
+@keyframes titleFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
