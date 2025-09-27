@@ -423,13 +423,7 @@ class Game {
             return;
         }
 
-        // Debug logging for bowling restrictions
-        console.log(`--- New Over Starting ---`);
-        console.log(`Current bowler: ${this.currentBowler?.name}`);
-        console.log(`Previous over bowler: ${this.previousOverBowler?.name}`);
-        console.log(`Balls bowled: ${this.balls}`);
-        console.log(`Over progress: ${this.balls % 6}/6`);
-
+  
         if (eligibleBowlers.length === 0) {
             this.currentBowler = this.oppositionTeam.players[0];
         } else {
@@ -441,13 +435,11 @@ class Game {
             if (this.previousOverBowler && this.balls > 0) {
                 const beforeFilter = availableBowlers.length;
                 availableBowlers = availableBowlers.filter(b => b.name !== this.previousOverBowler.name);
-                console.log(`Filtered out previous over bowler: ${this.previousOverBowler.name}. Bowlers before: ${beforeFilter}, after: ${availableBowlers.length}`);
-                
+                  
                 // If we've filtered out all bowlers, we need to allow the previous bowler to continue
                 // This is a safety check to prevent the game from breaking
                 if (availableBowlers.length === 0) {
-                    console.log('No bowlers available after consecutive over filter, allowing previous bowler to continue');
-                    availableBowlers = [this.previousOverBowler];
+                      availableBowlers = [this.previousOverBowler];
                 }
             }
             
@@ -468,8 +460,7 @@ class Game {
             
             // If no bowlers available after restrictions, relax rules progressively
             if (availableBowlers.length === 0) {
-                console.log('No bowlers available after restrictions, relaxing rules...');
-                // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
+                  // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
                 availableBowlers = [...eligibleBowlers];
                 if (this.maxOvers && this.maxOvers > 0) {
                     // Calculate max overs per bowler (20 overs -> 4 overs per bowler)
@@ -489,9 +480,7 @@ class Game {
             
             // Select a random bowler from available options
             const newBowler = availableBowlers[Math.floor(Math.random() * availableBowlers.length)];
-            console.log(`Selected new bowler: ${newBowler.name}`);
-            console.log(`Available bowlers: ${availableBowlers.map(b => b.name).join(', ')}`);
-            this.currentBowler = newBowler;
+                this.currentBowler = newBowler;
         }
 
         // Update UI with current bowler information
@@ -530,13 +519,11 @@ class Game {
         // Log bowling stats for verification
         const bowlerOvers = Math.floor(bowlerStat.balls / 6);
         const bowlerBallsInOver = bowlerStat.balls % 6;
-        console.log(`Updated ${bowlerName} stats: ${bowlerOvers}.${bowlerBallsInOver} overs, ${bowlerStat.runs} runs, ${bowlerStat.wickets} wickets`);
-        
+          
         // Check if bowler has completed an over
         if (bowlerBallsInOver === 1 && bowlerStat.balls > 1) { // First ball of a new over (after completing previous)
             const completedOvers = Math.floor((bowlerStat.balls - 1) / 6);
-            console.log(`${bowlerName} has completed ${completedOvers} over(s)`);
-        }
+          }
         
         // Check if bowler has exceeded max overs (for debugging)
         if (this.maxOvers && this.maxOvers > 0) {
@@ -1135,8 +1122,7 @@ class Game {
             
             // Set the previous over bowler BEFORE selecting new bowler
             if (this.currentBowler) {
-                console.log(`Setting previous over bowler to: ${this.currentBowler.name}`);
-                this.previousOverBowler = this.currentBowler;
+                        this.previousOverBowler = this.currentBowler;
             }
             
             this.selectBowler();
@@ -1337,29 +1323,7 @@ class Game {
 
     // Function to test scoring consistency (for debugging)
     testScoringConsistency() {
-        console.log("=== SCORING CONSISTENCY TEST ===");
-        const consistency = this.verifyScoreConsistency();
-        console.log(`Game Score: ${consistency.score}`);
-        console.log(`Batsman Total: ${consistency.batsmanTotal}`);
-        console.log(`Bowler Total: ${consistency.bowlerTotal}`);
-        console.log(`Score Matches Batsmen: ${consistency.scoreMatchesBatsmen}`);
-        
-        // Detailed batsman stats
-        console.log("Batsman Details:");
-        this.batsmanStats.forEach((stat, index) => {
-            console.log(`  ${index + 1}. ${stat.name}: ${stat.runs} runs from ${stat.balls} balls (${stat.fours} 4s, ${stat.sixes} 6s)${stat.howOut ? ' - ' + stat.howOut : ''}`);
-        });
-        
-        // Detailed bowler stats
-        console.log("Bowler Details:");
-        this.bowlerStats.forEach((stat, index) => {
-            const overs = Math.floor(stat.balls / 6);
-            const balls = stat.balls % 6;
-            console.log(`  ${index + 1}. ${stat.name}: ${stat.runs} runs (${overs}.${balls} overs, ${stat.wickets} wickets)`);
-        });
-        
-        console.log("=== END TEST ===");
-        return consistency;
+        return this.verifyScoreConsistency();
     }
 
     updateScoreboard() {
