@@ -84,8 +84,8 @@ body {
 .game-wrapper {
     position: relative;
     width: 100%;
-    max-width: 1170px;
-    aspect-ratio: 16 / 7.65;
+    max-width: 1287px;
+    aspect-ratio: 16 / 6.5;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
         inset 0 0 20px rgba(0, 0, 0, 0.3);
     background: #000;
@@ -966,10 +966,10 @@ body {
 
 #scorecardContent {
     width: 100%;
-    max-width: 850px;
+    max-width: 650px;
     background: rgba(30, 58, 138, 0.8);
     border-radius: 15px;
-    padding: 25px;
+    padding: 18px;
     overflow-x: auto;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     border: 2px solid rgba(255, 215, 0, 0.3);
@@ -1010,7 +1010,7 @@ body {
 }
 
 .scorecard-section {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     width: 100%;
 }
 
@@ -1026,9 +1026,10 @@ body {
 #battingScorecardTable td,
 #bowlingScorecardTable th,
 #bowlingScorecardTable td {
-    padding: 12px 10px;
+    padding: 8px 8px;
     text-align: left;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.9em;
 }
 
 #battingScorecardTable th,
@@ -1058,7 +1059,7 @@ body {
 #scorecardContent {
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 20px;
 }
 
 .scorecard-section {

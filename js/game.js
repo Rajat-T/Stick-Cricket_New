@@ -65,7 +65,6 @@ class Game {
         this.userTeamName = document.getElementById('userTeamName');
         this.oppositionTeamName = document.getElementById('oppositionTeamName');
         this.bowlerNameEl = document.getElementById('bowlerName');
-        this.bowlerTeamEl = document.getElementById('bowlerTeam');
         this.scoreEl = document.getElementById('score');
         this.oversEl = document.getElementById('overs');
         this.wicketsEl = document.getElementById('wickets');
@@ -505,11 +504,8 @@ class Game {
         }
 
         // Update UI with current bowler information
-        if (this.bowlerNameEl && this.bowlerTeamEl) {
+        if (this.bowlerNameEl) {
             this.bowlerNameEl.textContent = this.currentBowler.name;
-            this.bowlerTeamEl.textContent = this.oppositionTeam.shortName;
-            this.bowlerTeamEl.style.background = `linear-gradient(145deg, ${this.oppositionTeam.primaryColor}, ${this.adjustColor(this.oppositionTeam.primaryColor, -20)})`;
-            this.bowlerTeamEl.style.color = this.oppositionTeam.secondaryColor;
         }
     }
     updateBowlerStats(runs = 0, isWicket = false) {
