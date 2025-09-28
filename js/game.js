@@ -65,6 +65,9 @@ class Game {
         this.userTeamName = document.getElementById('userTeamName');
         this.oppositionTeamName = document.getElementById('oppositionTeamName');
         this.bowlerNameEl = document.getElementById('bowlerName');
+        this.batsmenInfoEl = document.getElementById('batsmenInfo');
+        this.batsmanLabels = document.querySelectorAll('.batsman-label');
+        this.batsmanScores = document.querySelectorAll('.batsman-score');
         this.scoreEl = document.getElementById('score');
         this.oversEl = document.getElementById('overs');
         this.wicketsEl = document.getElementById('wickets');
@@ -507,7 +510,30 @@ class Game {
         if (this.bowlerNameEl) {
             this.bowlerNameEl.textContent = this.currentBowler.name;
         }
+
+        // Update batsmen information
+        this.updateBatsmenInfo();
     }
+
+    updateBatsmenInfo() {
+        // Get only the currently active batsmen (those who are not out)
+        const activeBatsmen = this.batsmanStats.filter(batsman =>
+            batsman.howOut === null || batsman.howOut === undefined
+        );
+
+        // Clear all batsman displays
+        this.batsmanLabels.forEach(label => label.textContent = '');
+        this.batsmanScores.forEach(score => score.textContent = '');
+
+        // Display current batsmen (up to two)
+        activeBatsmen.slice(-2).forEach((batsman, index) => {
+            if (index < this.batsmanLabels.length) {
+                this.batsmanLabels[index].textContent = batsman.name;
+                this.batsmanScores[index].textContent = `${batsman.runs}(${batsman.balls})`;
+            }
+        });
+    }
+
     updateBowlerStats(runs = 0, isWicket = false) {
         // Only update stats for the current bowler who is actually bowling this ball
         if (!this.currentBowler) {
@@ -1169,6 +1195,9 @@ class Game {
             if (runsScored === 6) batsmanStatEntry.sixes += 1;
             batsmanStatEntry.bowler = this.currentBowler.name;
         }
+
+        // Update batsmen display after stats change
+        this.updateBatsmenInfo();
     }
     recordBallOutcome(outcome) {
         const outcomeStr = (outcome === 'W') ? 'W' : outcome.toString();
