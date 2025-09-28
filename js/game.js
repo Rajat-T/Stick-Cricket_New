@@ -12,7 +12,6 @@ class Game {
             this.crowd = [];
             this.initCrowd();
             this.soundBuffers = {};
-            this.isWaitingForSound = false;
 
             // Initialize audio system with error handling
             this.setupAudioContext();
@@ -25,7 +24,6 @@ class Game {
             this.crowd = [];
             this.initCrowd();
             this.soundBuffers = {};
-            this.isWaitingForSound = false;
         }
         this.initUI();
         this.initInput();
@@ -1365,34 +1363,6 @@ class Game {
             }
         }, 3000);
     }
-    // Helper function to verify score consistency
-    verifyScoreConsistency() {
-        // Calculate total runs from batsman stats
-        const totalBatsmanRuns = this.batsmanStats.reduce((total, stat) => total + stat.runs, 0);
-        
-        // Calculate total runs conceded by bowlers
-        const totalBowlerRuns = this.bowlerStats.reduce((total, stat) => total + stat.runs, 0);
-        
-        // Log for debugging
-        if (totalBatsmanRuns !== this.score) {
-            console.warn(`Score mismatch: Game score (${this.score}) != Batsman stats total (${totalBatsmanRuns})`);
-        }
-        
-        // Note: Bowler runs should match game score in most cases, but there might be edge cases
-        // where they don't (like extras that aren't attributed to a specific bowler)
-        return {
-            score: this.score,
-            batsmanTotal: totalBatsmanRuns,
-            bowlerTotal: totalBowlerRuns,
-            scoreMatchesBatsmen: totalBatsmanRuns === this.score
-        };
-    }
-
-    // Function to test scoring consistency (for debugging)
-    testScoringConsistency() {
-        return this.verifyScoreConsistency();
-    }
-
     updateScoreboard() {
         this.scoreEl.textContent = this.score;
         this.wicketsEl.textContent = this.wicketsTaken + '/' + this.maxWickets;
@@ -1432,11 +1402,7 @@ class Game {
         }
 
         // Verify score consistency (for debugging)
-        const consistency = this.verifyScoreConsistency();
-        if (!consistency.scoreMatchesBatsmen) {
-            // Only log detailed info if there's a mismatch
-            this.testScoringConsistency();
-        }
+
 
         // Add animation class and remove it after animation ends
         const elementsToAnimate = [this.scoreEl, this.wicketsEl, this.oversEl, this.foursEl, this.sixesEl, this.strikeRateEl, this.reqRunRateEl].filter(Boolean);
@@ -1806,26 +1772,6 @@ class Game {
         this.ctx.lineTo(cx, cy - outerRadius);
         this.ctx.closePath();
         this.ctx.fill();
-    }
-    
-    // Draw a sparkle effect
-    drawSparkle(cx, cy, size) {
-        // Draw main diamond
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx, cy - size);
-        this.ctx.lineTo(cx + size * 0.7, cy);
-        this.ctx.lineTo(cx, cy + size);
-        this.ctx.lineTo(cx - size * 0.7, cy);
-        this.ctx.closePath();
-        this.ctx.fill();
-        
-        // Draw cross lines
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx - size * 0.5, cy);
-        this.ctx.lineTo(cx + size * 0.5, cy);
-        this.ctx.moveTo(cx, cy - size * 0.5);
-        this.ctx.lineTo(cx, cy + size * 0.5);
-        this.ctx.stroke();
     }
     
     // Enhanced sparkle for celebrations

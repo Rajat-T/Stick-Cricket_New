@@ -27,7 +27,6 @@ class Ball {
         this.actualBowlerType = null;
         this.edgeRisk = 0;
         this.lbwRisk = 0;
-        this.seam = { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 };
         this.spinRate = 0;
         this.dragCoeff = this.AIR_DRAG;
         
@@ -57,7 +56,6 @@ class Ball {
         this.actualBowlerType = null;
         this.edgeRisk = 0;
         this.lbwRisk = 0;
-        this.seam = { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 };
         this.spinRate = 0;
         this.spinDrift = 0;
         this.dragCoeff = this.AIR_DRAG;
