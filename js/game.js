@@ -50,6 +50,7 @@ class Game {
         this.isTournamentMode = false;
         this.tournamentTarget = null;
         this.celebrationInProgress = false;
+        this.nextBallTimeout = null; // Track timeout for next ball to prevent race conditions
         requestAnimationFrame(t => this.gameLoop(t));
     }
     initUI() {
@@ -989,14 +990,20 @@ class Game {
                 if (this.celebrationInProgress) {
                     nextBallDelay += 3000; // Add extra delay for celebration
                 }
-                
-                setTimeout(() => {
+
+                // Clear any existing next ball timeout to prevent race conditions
+                if (this.nextBallTimeout) {
+                    clearTimeout(this.nextBallTimeout);
+                }
+
+                this.nextBallTimeout = setTimeout(() => {
                     if (this.gameState === 'between_balls' && !this.celebrationInProgress) {
                         // Only call nextBall if game is not paused
                         if (!this.gameLoopPaused) {
                             this.nextBall();
                         }
                     }
+                    this.nextBallTimeout = null; // Clear timeout reference
                 }, nextBallDelay);
             }
         }
@@ -1040,11 +1047,17 @@ class Game {
                 return;
             }
 
-            setTimeout(() => {
+            // Clear any existing next ball timeout to prevent race conditions
+            if (this.nextBallTimeout) {
+                clearTimeout(this.nextBallTimeout);
+            }
+
+            this.nextBallTimeout = setTimeout(() => {
                 // Only call nextBall if game is not paused
                 if (!this.gameLoopPaused) {
                     this.nextBall();
                 }
+                this.nextBallTimeout = null; // Clear timeout reference
             }, 1500);
         }
     }
@@ -1092,11 +1105,18 @@ class Game {
         } else {
             this.awaitingNextBall = true;
             this.gameLoopPaused = false;
-            setTimeout(() => {
+
+            // Clear any existing next ball timeout to prevent race conditions
+            if (this.nextBallTimeout) {
+                clearTimeout(this.nextBallTimeout);
+            }
+
+            this.nextBallTimeout = setTimeout(() => {
                 // Only call nextBall if game is not paused
                 if (!this.gameLoopPaused) {
                     this.nextBall();
                 }
+                this.nextBallTimeout = null; // Clear timeout reference
             }, 2000);
         }
     }
@@ -1194,6 +1214,12 @@ class Game {
     }
     // Reset state and start the next delivery
     nextBall() {
+        // Clear any existing next ball timeout to prevent race conditions
+        if (this.nextBallTimeout) {
+            clearTimeout(this.nextBallTimeout);
+            this.nextBallTimeout = null;
+        }
+
         this.awaitingNextBall = false; // clear waiting state between balls
         this.justDeliveredBall = true; // We're about to deliver a ball
         // Only resume game loop if it wasn't intentionally paused (e.g., for scorecard)
@@ -1602,6 +1628,11 @@ class Game {
                 if (!this.isGameOver()) {
                     this.gameLoopPaused = false;
                     // Schedule next ball after celebration ends
+                    // Clear any existing next ball timeout to prevent race conditions
+                    if (this.nextBallTimeout) {
+                        clearTimeout(this.nextBallTimeout);
+                    }
+
                     setTimeout(() => {
                         if (this.gameState === 'between_balls') {
                             this.nextBall();
@@ -1629,6 +1660,11 @@ class Game {
                 if (!this.isGameOver()) {
                     this.gameLoopPaused = false;
                     // Schedule next ball after celebration ends
+                    // Clear any existing next ball timeout to prevent race conditions
+                    if (this.nextBallTimeout) {
+                        clearTimeout(this.nextBallTimeout);
+                    }
+
                     setTimeout(() => {
                         if (this.gameState === 'between_balls') {
                             this.nextBall();
