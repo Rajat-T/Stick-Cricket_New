@@ -1034,6 +1034,8 @@ class Game {
             this.recordBallOutcome(0);
             // Credit the dot ball to the correct bowler BEFORE potential over change
             this.updateBowlerStats(0);
+            // Update batsman stats for the missed ball (dot ball)
+            this.updateBatsmanStats('runs', 0);
             this.incrementBall();
             this.updateScoreboard();
             this.gameState = 'between_balls';
@@ -1081,7 +1083,10 @@ class Game {
         this.updateBatsmanStats('wicket', type, runsScoredOnWicket);
         this.recordBallOutcome('W');
         // Credit the wicket ball to the correct bowler BEFORE potential over change
-        this.updateBowlerStats(runsScoredOnWicket, true);
+        // But only if this is not a run-out (run-outs already had bowler stats updated when runs were scored)
+        if (type !== 'Run Out!') {
+            this.updateBowlerStats(runsScoredOnWicket, true);
+        }
         this.incrementBall();
         this.updateScoreboard();
         this.showFeedback(`0 · ${type}`, '#FF4136');
@@ -1158,7 +1163,10 @@ class Game {
             // Wicket: record dismissal details and final runs for this ball
             // For wickets where runs were already recorded, this updates the final result of the ball
             batsmanStatEntry.howOut = value;
-            batsmanStatEntry.balls += 1;
+            // Only increment balls if this is not a run-out (run-outs already had balls counted in the 'runs' event)
+            if (value !== 'Run Out!') {
+                batsmanStatEntry.balls += 1;
+            }
             // Only add the runs that were actually completed (this may adjust for cases like run-out)
             batsmanStatEntry.runs += runsScored;
             if (runsScored === 4) batsmanStatEntry.fours += 1;
