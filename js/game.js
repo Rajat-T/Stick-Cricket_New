@@ -911,10 +911,9 @@ class Game {
                     this.ball.travelTo(catcher.x, catcher.y);
                 }
             } else {
-                this.score += result.runs;
-                this.updateBatsmanStats('runs', result.runs);
-
                 const isPoorShot = result.timingScore <= 1; // Early, Late, Too Early, Too Late
+                let actualRunsScored = result.runs; // Track the actual runs scored on this ball after all events
+                
                 if (isPoorShot && result.runs > 0 && result.runs < 4) { // Only on singles, doubles, triples
                     const runOutChance = 0.1; // 10% chance of a run-out on a poor shot
                     if (Math.random() < runOutChance) {
@@ -927,26 +926,27 @@ class Game {
                         if (closestFielder) {
                             // Animate the fielder throwing the ball to the wickets
                             this.ball.travelTo(this.wicketsObject.x, this.wicketsObject.y);
-                            // Adjust the score to reflect one less run (the batsman who got run out doesn't get credit for that run)
-                            this.score -= 1;
-                            // For run-out, we need to properly handle the batsman stats to avoid double counting
-                            // Remove the previously added runs and add the adjusted runs
-                            const currentBatsmanIndex = this.batsmanStats.findIndex(stat => stat.howOut === null || stat.howOut === undefined);
-                            if (currentBatsmanIndex !== -1) {
-                                const currentBatsman = this.batsmanStats[currentBatsmanIndex];
-                                // Adjust the batsman's runs by removing the original runs and adding the adjusted ones
-                                currentBatsman.runs = currentBatsman.runs - result.runs + (result.runs - 1);
-                            }
-                            this.handleWicket('Run Out!', result.runs -1); // Batsman completes one less run
+                            actualRunsScored = result.runs - 1; // Only the completed runs count in a run-out
+                            // Adjust the score to reflect the actual runs completed
+                            this.score += actualRunsScored;
+                            
+                            // Update batsman stats with the actual runs scored
+                            this.updateBatsmanStats('runs', actualRunsScored);
+                            
+                            this.handleWicket('Run Out!', actualRunsScored); // Batsman completes actual runs before being run out
                             return;
                         }
                     }
                 }
                 
-                // Check for individual batsman milestone celebrations (50 and 100)
-                this.checkIndividualMilestoneCelebration(result.runs);
+                // If no run-out occurred, add the runs normally
+                this.score += actualRunsScored;
+                this.updateBatsmanStats('runs', actualRunsScored);
                 
-                this.updateBowlerStats(result.runs);
+                // Check for individual batsman milestone celebrations (50 and 100) - only if not a wicket
+                this.checkIndividualMilestoneCelebration(actualRunsScored);
+                
+                this.updateBowlerStats(actualRunsScored);
                 if (this.gameMode === 'runChase' && this.score >= this.targetRuns) {
                     this.showFeedback(`Chase Complete! ${this.score}/${this.targetRuns}`, '#01FF70');
                     setTimeout(() => this.endGame(), 2000);
@@ -1105,6 +1105,9 @@ class Game {
         // But only if this is not a run-out (run-outs already had bowler stats updated when runs were scored)
         if (type !== 'Run Out!') {
             this.updateBowlerStats(runsScoredOnWicket, true);
+        } else {
+            // For run-outs, we still need to record the wicket for the bowler, but runs were already added
+            this.updateBowlerStats(0, true); // Only add the wicket, runs already credited
         }
         this.incrementBall();
         this.updateScoreboard();
