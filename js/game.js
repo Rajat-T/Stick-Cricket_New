@@ -65,9 +65,7 @@ class Game {
         this.userTeamName = document.getElementById('userTeamName');
         this.oppositionTeamName = document.getElementById('oppositionTeamName');
         this.bowlerNameEl = document.getElementById('bowlerName');
-        this.batsmenInfoEl = document.getElementById('batsmenInfo');
-        this.batsmanLabels = document.querySelectorAll('.batsman-label');
-        this.batsmanScores = document.querySelectorAll('.batsman-score');
+        this.batsmenListEl = document.getElementById('batsmenList');
         this.scoreEl = document.getElementById('score');
         this.oversEl = document.getElementById('overs');
         this.wicketsEl = document.getElementById('wickets');
@@ -328,7 +326,7 @@ class Game {
         this.scoreboard.style.display = 'block';
         this.overTracker.style.display = 'block';
         this.scorecardBtn.style.display = 'block';
-        this.scorecardBtn.style.top = '115px';
+        this.scorecardBtn.style.top = '190px'; // Positioned below larger currentBatsmen with proper spacing
         this.scorecardBtn.style.right = '20px';
         this.timingMeter.style.display = 'block';
         this.wicketsTaken = 0;
@@ -521,16 +519,15 @@ class Game {
             batsman.howOut === null || batsman.howOut === undefined
         );
 
-        // Clear all batsman displays
-        this.batsmanLabels.forEach(label => label.textContent = '');
-        this.batsmanScores.forEach(score => score.textContent = '');
+        // Clear batsmen list
+        this.batsmenListEl.innerHTML = '';
 
-        // Display current batsmen (up to two)
-        activeBatsmen.slice(-2).forEach((batsman, index) => {
-            if (index < this.batsmanLabels.length) {
-                this.batsmanLabels[index].textContent = batsman.name;
-                this.batsmanScores[index].textContent = `${batsman.runs}(${batsman.balls})`;
-            }
+        // Display current batsmen (up to two) in "Name - Runs(Balls)" format
+        activeBatsmen.slice(-2).forEach(batsman => {
+            const batsmanItem = document.createElement('div');
+            batsmanItem.className = 'batsman-item';
+            batsmanItem.textContent = `${batsman.name} - ${batsman.runs}(${batsman.balls})`;
+            this.batsmenListEl.appendChild(batsmanItem);
         });
     }
 
@@ -601,7 +598,7 @@ class Game {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${stats.name}</td>
-                <td>${stats.bowler || '-'}</td>
+                <td>${(stats.bowler || '-').trim()}</td>
                 <td>${stats.howOut || 'Not Out'}</td>
                 <td>${stats.runs}</td>
                 <td>${stats.balls}</td>
