@@ -472,7 +472,7 @@ class Ball {
         const loftBase = 75 * power * (shotType === "defensive" ? 0.3 : 1);
         batVel.z = loftBase + Math.max(0, -0.18 * batVel.y);
         
-        const e = 0.58; // Slightly higher restitution for more realistic ball speeds
+        const e = 0.58;
         this.vel.x = (1 + e) * batVel.x - e * incomingVec.x;
         this.vel.y = (1 + e) * batVel.y - e * incomingVec.y;
         this.vel.z = Math.max(0, (1 + e) * batVel.z - e * incomingVec.z);
@@ -612,7 +612,7 @@ class Ball {
         
         for (let i = 0; i < maxPoints; i++) {
             // Apply physics
-            velZ -= this.G * dt * 0.8; // Slightly reduced gravity for dramatic effect
+            velZ -= this.G * dt * 0.8;
             posX += velX * dt;
             posY += velY * dt;
             posZ += velZ * dt;
@@ -664,7 +664,7 @@ class Ball {
         
         for (let i = 0; i < maxPoints; i++) {
             // Apply physics
-            velZ -= this.G * dt * 1.2; // Increased gravity to keep ball grounded
+            velZ -= this.G * dt * 1.2;
             posX += velX * dt;
             posY += velY * dt;
             posZ += velZ * dt;
@@ -704,7 +704,7 @@ class Ball {
                 velX += 80; // Moderate rightward
                 break;
             case 'up':
-                velY *= 1.1; // Slightly more forward for straight shots
+                velY *= 1.1;
                 break;
             case 'down':
                 velY *= 0.8; // Less forward for defensive shots
@@ -720,7 +720,7 @@ class Ball {
         
         for (let i = 0; i < maxPoints; i++) {
             // Apply physics
-            velZ -= this.G * dt * 1.5; // Increased gravity to keep ball grounded
+            velZ -= this.G * dt * 1.5;
             posX += velX * dt;
             posY += velY * dt;
             posZ += velZ * dt;
@@ -761,7 +761,7 @@ class Ball {
                 velX += 30; // Minimal rightward
                 break;
             case 'up':
-                velY *= 1.2; // Slightly more forward
+                velY *= 1.2;
                 break;
             case 'down':
                 velY *= 0.5; // Very little forward

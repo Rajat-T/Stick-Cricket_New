@@ -326,7 +326,7 @@ class Game {
         this.scoreboard.style.display = 'block';
         this.overTracker.style.display = 'block';
         this.scorecardBtn.style.display = 'block';
-        this.scorecardBtn.style.top = '190px'; // Positioned below larger currentBatsmen with proper spacing
+        this.scorecardBtn.style.top = '190px';
         this.scorecardBtn.style.right = '20px';
         this.timingMeter.style.display = 'block';
         this.wicketsTaken = 0;
