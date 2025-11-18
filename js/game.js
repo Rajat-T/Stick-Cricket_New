@@ -131,16 +131,16 @@ class Game {
     generateMatchConditions() {
         // Randomly select stadium
         this.currentStadium = this.stadiums[Math.floor(Math.random() * this.stadiums.length)];
-        
+
         // Randomly decide day or night game (50% chance each)
         this.isNightGame = Math.random() > 0.5;
-        
+
         // Display match condition feedback
         const conditionText = this.isNightGame ? 'Night Match' : 'Day Match';
         const stadiumName = this.getStadiumDisplayName(this.currentStadium);
         this.showMatchConditionFeedback(`${conditionText} at ${stadiumName}`);
     }
-    
+
     // Helper method to get display name for stadium
     getStadiumDisplayName(stadiumType) {
         switch (stadiumType) {
@@ -154,20 +154,20 @@ class Game {
                 return "International Stadium";
         }
     }
-    
+
     // Method to show match condition feedback
     showMatchConditionFeedback(text) {
         const conditionEl = document.getElementById('matchConditions');
         if (conditionEl) {
             conditionEl.textContent = text;
             conditionEl.style.display = 'block';
-            
+
             // Apply appropriate CSS class for day/night styling
             conditionEl.classList.remove('day', 'night');
             conditionEl.classList.add(this.isNightGame ? 'night' : 'day');
         }
     }
-    
+
     adjustColor(color, amount) {
         let usePound = false;
         if (color[0] == "#") {
@@ -215,12 +215,12 @@ class Game {
             }
         }
         this.userTeam = team;
-        
+
         if (this.isTournamentMode) {
             // Initialize tournament with selected team
             this.tournamentManager = new TournamentManager();
             this.tournamentManager.initializeTournament(team.id);
-            
+
             // Set opposition for current match
             const currentMatchInfo = this.tournamentManager.getCurrentMatchInfo();
             if (currentMatchInfo) {
@@ -238,7 +238,7 @@ class Game {
     showTeamDisplay() {
         this.teamSelection.style.display = 'none';
         this.teamDisplay.style.display = 'flex';
-        
+
         if (this.isTournamentMode && this.tournamentManager) {
             const currentMatchInfo = this.tournamentManager.getCurrentMatchInfo();
             if (currentMatchInfo) {
@@ -249,7 +249,7 @@ class Game {
         } else {
             this.userTeamName.textContent = `${this.userTeam.name} (Your Team)`;
         }
-        
+
         this.userTeamName.style.color = this.userTeam.primaryColor;
         this.userTeamName.style.textShadow = `0 0 10px ${this.userTeam.primaryColor}`;
         this.userTeamPlayers.innerHTML = '';
@@ -262,13 +262,13 @@ class Game {
             `;
             this.userTeamPlayers.appendChild(li);
         });
-        
+
         if (this.isTournamentMode) {
             this.oppositionTeamName.textContent = `${this.oppositionTeam.name} - vs You`;
         } else {
             this.oppositionTeamName.textContent = `${this.oppositionTeam.name}`;
         }
-        
+
         this.oppositionTeamName.style.color = this.oppositionTeam.primaryColor;
         this.oppositionTeamName.style.textShadow = `0 0 10px ${this.oppositionTeam.primaryColor}`;
         this.oppositionTeamPlayers.innerHTML = '';
@@ -288,7 +288,7 @@ class Game {
         this.gameMode = mode;
         this.menu.style.display = 'none';
         this.isTournamentMode = mode === 'tournament';
-        
+
         if (this.isTournamentMode) {
             this.teamSelection.style.display = 'flex';
             this.teamDisplay.style.display = 'none';
@@ -299,7 +299,7 @@ class Game {
             this.teamDisplay.style.display = 'none';
             this.gameState = 'team_selection';
         }
-        
+
         this.userTeam = null;
         this.oppositionTeam = null;
         const cards = document.querySelectorAll('.team-card');
@@ -353,10 +353,10 @@ class Game {
             }
         };
         this.difficulty = difficulties[difficulty];
-        
+
         // Generate match conditions (stadium and day/night)
         this.generateMatchConditions();
-        
+
         this.score = 0;
         this.balls = 0;
         this.fours = 0;
@@ -376,7 +376,7 @@ class Game {
             this.wicketsTaken = 0;
             this.maxWickets = 10;
             this.maxOvers = 20; // T20 format - 20 overs per side
-            
+
             if (this.isTournamentMode) {
                 // Generate target for user to chase (user always chases)
                 const difficulty = document.getElementById('difficulty').value;
@@ -384,7 +384,7 @@ class Game {
                 if (difficulty === 'amateur') baseTarget = 80 + Math.floor(Math.random() * 41); // 80-120
                 else if (difficulty === 'pro') baseTarget = 120 + Math.floor(Math.random() * 61); // 120-180
                 else baseTarget = 150 + Math.floor(Math.random() * 71); // 150-220
-                
+
                 this.targetRuns = baseTarget;
                 this.tournamentTarget = baseTarget;
                 this.showFeedback(`Chase Target: ${this.targetRuns}`, '#FFD700');
@@ -428,7 +428,7 @@ class Game {
             console.error('No opposition team available for bowler selection');
             return;
         }
-        
+
         const eligibleBowlers = this.oppositionTeam.players.filter(player =>
             (player.role.includes('Bowler') || player.role.includes('All-rounder'))
         );
@@ -436,7 +436,7 @@ class Game {
         // Determine if we're starting a new over
         // A new over starts when we have no current bowler (game start) OR when we just completed 6 balls
         const isNewOver = !this.currentBowler || (this.balls % 6 === 0 && this.balls > 0);
-        
+
         // CRITICAL FIX: Only select/change bowler at the start of a new over
         // During an over (balls 1-5 of any 6-ball sequence), keep the same bowler
         if (!isNewOver) {
@@ -444,26 +444,26 @@ class Game {
             return;
         }
 
-  
+
         if (eligibleBowlers.length === 0) {
             this.currentBowler = this.oppositionTeam.players[0];
         } else {
             // Apply cricket bowling restrictions
             let availableBowlers = [...eligibleBowlers];
-            
+
             // RULE 1: No consecutive overs - exclude previous over's bowler
             // Only apply this rule when we have a previous over bowler (not at game start)
             if (this.previousOverBowler && this.balls > 0) {
                 const beforeFilter = availableBowlers.length;
                 availableBowlers = availableBowlers.filter(b => b.name !== this.previousOverBowler.name);
-                  
+
                 // If we've filtered out all bowlers, we need to allow the previous bowler to continue
                 // This is a safety check to prevent the game from breaking
                 if (availableBowlers.length === 0) {
-                      availableBowlers = [this.previousOverBowler];
+                    availableBowlers = [this.previousOverBowler];
                 }
             }
-            
+
             // RULE 2: Limited overs restriction (n/5 rule)
             // In limited overs cricket, a bowler can't bowl more than maxOvers/5 overs
             // For a 20-over game, this means max 4 overs per bowler
@@ -478,10 +478,10 @@ class Game {
                     });
                 }
             }
-            
+
             // If no bowlers available after restrictions, relax rules progressively
             if (availableBowlers.length === 0) {
-                  // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
+                // First, allow bowlers who haven't exceeded over limit (but may have bowled previous over)
                 availableBowlers = [...eligibleBowlers];
                 if (this.maxOvers && this.maxOvers > 0) {
                     // Calculate max overs per bowler (20 overs -> 4 overs per bowler)
@@ -498,10 +498,10 @@ class Game {
                     }
                 }
             }
-            
+
             // Select a random bowler from available options
             const newBowler = availableBowlers[Math.floor(Math.random() * availableBowlers.length)];
-                this.currentBowler = newBowler;
+            this.currentBowler = newBowler;
         }
 
         // Update UI with current bowler information
@@ -537,7 +537,7 @@ class Game {
             console.warn('No current bowler set - cannot update bowling stats');
             return;
         }
-        
+
         const bowlerName = this.currentBowler.name;
         let bowlerStat = this.bowlerStats.find(b => b.name === bowlerName);
 
@@ -555,16 +555,16 @@ class Game {
         bowlerStat.runs += runs;
         bowlerStat.balls++;
         if (isWicket) bowlerStat.wickets++;
-        
+
         // Log bowling stats for verification
         const bowlerOvers = Math.floor(bowlerStat.balls / 6);
         const bowlerBallsInOver = bowlerStat.balls % 6;
-          
+
         // Check if bowler has completed an over
         if (bowlerBallsInOver === 1 && bowlerStat.balls > 1) { // First ball of a new over (after completing previous)
             const completedOvers = Math.floor((bowlerStat.balls - 1) / 6);
-          }
-        
+        }
+
         // Check if bowler has exceeded max overs (for debugging)
         if (this.maxOvers && this.maxOvers > 0) {
             const maxOversPerBowler = Math.min(4, Math.floor(this.maxOvers / 5));
@@ -613,7 +613,7 @@ class Game {
         const totalBalls = this.batsmanStats.reduce((total, stat) => total + stat.balls, 0);
         const totalFours = this.batsmanStats.reduce((total, stat) => total + stat.fours, 0);
         const totalSixes = this.batsmanStats.reduce((total, stat) => total + stat.sixes, 0);
-        
+
         const totalRow = document.createElement('tr');
         totalRow.className = 'scorecard-total';
         totalRow.innerHTML = `
@@ -633,12 +633,12 @@ class Game {
         // Only show bowlers who have bowled at least one ball
         // Filter out bowlers with 0 balls to avoid empty entries
         const activeBowlers = this.bowlerStats.filter(stat => stat.balls > 0);
-        
+
         activeBowlers.forEach(stat => {
             // Calculate overs: complete overs + remaining balls
             const completeOvers = Math.floor(stat.balls / 6);
             const remainingBalls = stat.balls % 6;
-            
+
             // Display overs properly: if remaining balls = 0, show just complete overs
             // If remaining balls > 0, show complete.remaining format
             let oversDisplay;
@@ -647,7 +647,7 @@ class Game {
             } else {
                 oversDisplay = completeOvers + '.' + remainingBalls;
             }
-            
+
             // Calculate economy rate only if bowler has bowled at least 6 balls (1 over)
             let economy;
             if (stat.balls >= 6) {
@@ -667,12 +667,12 @@ class Game {
             `;
             bowlingBody.appendChild(row);
         });
-        
+
         // Add total row for bowlers
         const totalBowlerRuns = this.bowlerStats.reduce((total, stat) => total + stat.runs, 0);
         const totalBowlerWickets = this.bowlerStats.reduce((total, stat) => total + stat.wickets, 0);
         const totalBowlerBalls = this.bowlerStats.reduce((total, stat) => total + stat.balls, 0);
-        
+
         const totalBowlerOvers = Math.floor(totalBowlerBalls / 6);
         const totalBowlerBallsInOver = totalBowlerBalls % 6;
         let totalOversDisplay;
@@ -681,7 +681,7 @@ class Game {
         } else {
             totalOversDisplay = totalBowlerOvers + '.' + totalBowlerBallsInOver;
         }
-        
+
         const totalBowlerRow = document.createElement('tr');
         totalBowlerRow.className = 'scorecard-total';
         totalBowlerRow.innerHTML = `
@@ -827,16 +827,16 @@ class Game {
         this.crowd.forEach(person => {
             const x = W * person.x;
             const y = H * person.y;
-            
+
             // Enhanced crowd members with better shapes
             this.ctx.fillStyle = person.color;
-            
+
             // Draw crowd member as a simple person shape
             // Head
             this.ctx.beginPath();
             this.ctx.arc(x, y - person.size, person.size * 0.8, 0, Math.PI * 2);
             this.ctx.fill();
-            
+
             // Body
             this.ctx.beginPath();
             this.ctx.moveTo(x, y - person.size * 0.2);
@@ -845,13 +845,13 @@ class Game {
             this.ctx.lineWidth = person.size * 0.5;
             this.ctx.lineCap = 'round';
             this.ctx.stroke();
-            
+
             // Arms
             this.ctx.beginPath();
             this.ctx.moveTo(x - person.size, y);
             this.ctx.lineTo(x + person.size, y);
             this.ctx.stroke();
-            
+
             // Add cheering animation based on game events
             if (this.gameState === 'playing' && Math.random() < 0.02) {
                 // Occasionally raise arms for cheering
@@ -860,7 +860,7 @@ class Game {
                 this.ctx.lineTo(x + person.size, y - person.size);
                 this.ctx.stroke();
             }
-            
+
             // Move crowd members slightly for dynamic effect
             person.x += (Math.random() - 0.5) * 0.01 * person.speed;
             if (person.x < 0) person.x = 0;
@@ -872,7 +872,7 @@ class Game {
             const result = this.ball.attemptHit(this.batsman.swingDirection);
             this.updateTimingMeter(result.timing, result.timingScore);
             this.batsman.isSwinging = false;
-            
+
             // Handle new dismissal types from enhanced physics
             if (result.dismissal) {
                 // For dismissals during a hit, the runs were already added to the batsman,
@@ -891,11 +891,11 @@ class Game {
                 }
                 return;
             }
-            
+
             this.showFeedback(`${result.runs} · ${result.timing}`, result.color);
             this.playSound('hit', 0.8 + Math.random() * 0.2, 0.5);
             this.createParticles(this.ball.pos.x, this.ball.pos.y - this.ball.pos.z, 10, result.color);
-            
+
             const isMishit = result.timingScore < 2;
             const isLofted = this.ball.vel.z > 40;
             const isCaught = false;
@@ -913,7 +913,7 @@ class Game {
             } else {
                 const isPoorShot = result.timingScore <= 1; // Early, Late, Too Early, Too Late
                 let actualRunsScored = result.runs; // Track the actual runs scored on this ball after all events
-                
+
                 if (isPoorShot && result.runs > 0 && result.runs < 4) { // Only on singles, doubles, triples
                     const runOutChance = 0.1; // 10% chance of a run-out on a poor shot
                     if (Math.random() < runOutChance) {
@@ -929,23 +929,23 @@ class Game {
                             actualRunsScored = result.runs - 1; // Only the completed runs count in a run-out
                             // Adjust the score to reflect the actual runs completed
                             this.score += actualRunsScored;
-                            
+
                             // Update batsman stats with the actual runs scored
                             this.updateBatsmanStats('runs', actualRunsScored);
-                            
+
                             this.handleWicket('Run Out!', actualRunsScored); // Batsman completes actual runs before being run out
                             return;
                         }
                     }
                 }
-                
+
                 // If no run-out occurred, add the runs normally
                 this.score += actualRunsScored;
                 this.updateBatsmanStats('runs', actualRunsScored);
-                
+
                 // Check for individual batsman milestone celebrations (50 and 100) - only if not a wicket
                 this.checkIndividualMilestoneCelebration(actualRunsScored);
-                
+
                 this.updateBowlerStats(actualRunsScored);
                 if (this.gameMode === 'runChase' && this.score >= this.targetRuns) {
                     this.showFeedback(`Chase Complete! ${this.score}/${this.targetRuns}`, '#01FF70');
@@ -995,7 +995,7 @@ class Game {
                 this.ball.isActive = false;
                 this.gameState = 'between_balls';
                 this.awaitingNextBall = true;
-                
+
                 // If match ended on this delivery (e.g., overs exhausted in chase), end gracefully
                 if (this.isGameOver()) {
                     setTimeout(() => this.endGame(), 1500);
@@ -1034,7 +1034,7 @@ class Game {
                 z: this.ball.vel.z
             };
             const bowlerStyle = this.currentBowler?.bowlingStyle || this.ball.bowlingStyle || 'Fast Medium';
-            
+
             this.wicketsObject.hit(ballVelocity, bowlerStyle);
             this.handleWicket('Bowled!', 0);
             return;
@@ -1117,7 +1117,7 @@ class Game {
 
         // 3. Create celebration particles for wicket
         this.createWicketParticles(this.ball.pos.x, this.ball.pos.y - this.ball.pos.z, 50);
-        
+
         // 4. Add screen flash effect for dramatic wicket
         this.wrapper.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
         setTimeout(() => {
@@ -1211,12 +1211,12 @@ class Game {
             this.showFeedback(`Over complete – last ball: ${lastBall}`, '#FFD700');
             this.currentOver = [];
             this.updateOverTracker();
-            
+
             // Set the previous over bowler BEFORE selecting new bowler
             if (this.currentBowler) {
-                        this.previousOverBowler = this.currentBowler;
+                this.previousOverBowler = this.currentBowler;
             }
-            
+
             this.selectBowler();
         }
     }
@@ -1264,47 +1264,49 @@ class Game {
         this.ball.isActive = false;
         this.gameState = 'playing';
         this.wicketsObject.reset();
-        this.bowler.startDelivery();
-        
-        // Reset ball trajectory visualization
-        this.ball.showTrajectory = false;
-        this.ball.trajectory = [];
-        
-        // Enhanced ball type selection based on actual bowler
-        let ballTypes = ['fast', 'medium', 'spin'];
-        let ballType;
-        
-        if (this.currentBowler) {
-            const bowlerRole = this.currentBowler.role;
-            
-            // Determine likely ball type based on bowler's role
-            if (bowlerRole.includes('Bowler')) {
-                // Analyze bowler name for type hints (realistic but simplified)
-                const name = this.currentBowler.name.toLowerCase();
-                if (name.includes('bumrah') || name.includes('starc') || name.includes('cummins') || 
-                    name.includes('shami') || name.includes('natarajan') || name.includes('malik')) {
-                    ballTypes = ['fast', 'fast', 'medium']; // Fast bowlers
-                } else if (name.includes('rashid') || name.includes('chahal') || name.includes('narine') || 
-                           name.includes('chakravarthy') || name.includes('sharma') && name.includes('karn')) {
-                    ballTypes = ['spin', 'spin', 'medium']; // Spin bowlers
-                } else {
-                    ballTypes = ['medium', 'medium', 'fast']; // Medium pace bowlers
+
+        // Pass callback to startDelivery to sync ball release with animation
+        this.bowler.startDelivery(() => {
+            // Reset ball trajectory visualization
+            this.ball.showTrajectory = false;
+            this.ball.trajectory = [];
+
+            // Enhanced ball type selection based on actual bowler
+            let ballTypes = ['fast', 'medium', 'spin'];
+            let ballType;
+
+            if (this.currentBowler) {
+                const bowlerRole = this.currentBowler.role;
+
+                // Determine likely ball type based on bowler's role
+                if (bowlerRole.includes('Bowler')) {
+                    // Analyze bowler name for type hints (realistic but simplified)
+                    const name = this.currentBowler.name.toLowerCase();
+                    if (name.includes('bumrah') || name.includes('starc') || name.includes('cummins') ||
+                        name.includes('shami') || name.includes('natarajan') || name.includes('malik')) {
+                        ballTypes = ['fast', 'fast', 'medium']; // Fast bowlers
+                    } else if (name.includes('rashid') || name.includes('chahal') || name.includes('narine') ||
+                        name.includes('chakravarthy') || name.includes('sharma') && name.includes('karn')) {
+                        ballTypes = ['spin', 'spin', 'medium']; // Spin bowlers
+                    } else {
+                        ballTypes = ['medium', 'medium', 'fast']; // Medium pace bowlers
+                    }
+                } else if (bowlerRole.includes('All-rounder')) {
+                    ballTypes = ['medium', 'medium', 'spin']; // All-rounders tend to bowl medium/spin
                 }
-            } else if (bowlerRole.includes('All-rounder')) {
-                ballTypes = ['medium', 'medium', 'spin']; // All-rounders tend to bowl medium/spin
             }
-        }
-        
-        ballType = ballTypes[Math.floor(Math.random() * ballTypes.length)];
-        const side = Math.random() > 0.5 ? 'off' : 'leg';
-        
-        // Pass bowler type and bowling style information to ball
-        this.ball.bowl(ballType, side, this.currentBowler?.role, this.currentBowler?.bowlingStyle);
-        
-        // Reset the flag shortly after the ball is bowled
-        setTimeout(() => {
-            this.justDeliveredBall = false;
-        }, 100); // Small buffer time to ensure ball is active
+
+            ballType = ballTypes[Math.floor(Math.random() * ballTypes.length)];
+            const side = Math.random() > 0.5 ? 'off' : 'leg';
+
+            // Pass bowler type and bowling style information to ball
+            this.ball.bowl(ballType, side, this.currentBowler?.role, this.currentBowler?.bowlingStyle);
+
+            // Reset the flag shortly after the ball is bowled
+            setTimeout(() => {
+                this.justDeliveredBall = false;
+            }, 100); // Small buffer time to ensure ball is active
+        });
     }
     isGameOver() {
         const oversBowled = Math.floor(this.balls / 6);
@@ -1334,7 +1336,7 @@ class Game {
         this.timingMeter.style.display = 'none';
         let message = `Game Over! Score: ${this.score}`;
         let isWin = false;
-        
+
         if (this.gameMode === 'challenge') {
             if (this.score >= this.targetRuns) {
                 message = `Target Achieved! ${this.score}/${this.targetRuns}`;
@@ -1354,7 +1356,7 @@ class Game {
             const oppositionScore = this.tournamentTarget - 1 + Math.floor(Math.random() * 20); // Random around target
             // T20 format: opposition innings is 20 overs (120 balls)
             const oppositionBalls = (this.maxOvers && this.maxOvers > 0 ? this.maxOvers : 20) * 6;
-            
+
             if (this.score >= this.tournamentTarget) {
                 message = `Chase Successful! ${this.score}/${this.tournamentTarget}`;
                 isWin = true;
@@ -1362,13 +1364,13 @@ class Game {
                 message = `Chase Failed! ${this.score}/${this.tournamentTarget}`;
                 isWin = false;
             }
-            
+
             // Complete the tournament match regardless of win/loss
             if (this.tournamentManager) {
                 const matchResult = this.tournamentManager.completeUserMatch(
                     this.score, this.balls, oppositionScore, oppositionBalls, isWin
                 );
-                
+
                 // Store match result for display
                 this.lastMatchResult = matchResult;
             } else {
@@ -1379,15 +1381,15 @@ class Game {
                 };
             }
         }
-        
+
         this.showFeedback(message, isWin ? '#01FF70' : '#FFDC00');
-        
+
         if (this.score > this.highScore) {
             this.highScore = this.score;
             localStorage.setItem('ultimateCricketHighScore', this.highScore);
             this.highScoreValueEl.textContent = this.highScore;
         }
-        
+
         setTimeout(() => {
             if (this.isTournamentMode) {
                 this.showTournamentResults();
@@ -1490,18 +1492,18 @@ class Game {
         this.feedbackText.style.textShadow = `0 0 20px ${color}, 0 0 30px ${color}`;
         this.feedbackText.style.transform = 'translate(-50%, -50%) scale(1)';
         this.feedbackText.style.opacity = 1;
-        
+
         // Enhanced effects for milestone celebrations
         if (text.includes('CENTURY') || text.includes('FIFTY')) {
             // Add special celebration animation
             this.feedbackText.style.animation = 'celebrationPulse 0.8s ease-in-out';
             this.feedbackText.style.fontSize = 'clamp(2.2rem, 7vw, 4rem)';
-            
+
             setTimeout(() => {
                 this.feedbackText.style.animation = 'feedbackPulse 0.3s ease-in-out infinite alternate';
                 this.feedbackText.style.fontSize = 'clamp(2rem, 6vw, 3.5rem)';
             }, 800);
-            
+
             setTimeout(() => {
                 this.feedbackText.style.animation = '';
             }, 2000);
@@ -1512,10 +1514,10 @@ class Game {
                 this.feedbackText.style.animation = '';
             }, 1500);
         }
-        
+
         // Auto-hide timing based on text importance
         const hideDelay = (text.includes('CENTURY') || text.includes('FIFTY')) ? 2500 : 1500;
-        
+
         setTimeout(() => {
             this.feedbackText.style.transform = 'translate(-50%, -50%) scale(0.7)';
             this.feedbackText.style.opacity = 0;
@@ -1536,7 +1538,7 @@ class Game {
             });
         }
     }
-    
+
     // Create special effect particles for boundaries
     createBoundaryParticles(x, y, count, color) {
         for (let i = 0; i < count; i++) {
@@ -1553,7 +1555,7 @@ class Game {
             });
         }
     }
-    
+
     // Create celebration particles for wickets
     createWicketParticles(x, y, count) {
         for (let i = 0; i < count; i++) {
@@ -1571,20 +1573,20 @@ class Game {
             });
         }
     }
-    
+
     checkIndividualMilestoneCelebration(runsScored) {
         // Get the current batsman's stats
         const currentBatsmanIndex = this.batsmanStats.findIndex(stat => stat.howOut === null || stat.howOut === undefined);
         if (currentBatsmanIndex === -1) return;
-        
+
         const currentBatsman = this.batsmanStats[currentBatsmanIndex];
         const previousBatsmanScore = currentBatsman.runs - runsScored;
         const currentBatsmanScore = currentBatsman.runs;
-        
+
         // Check if individual batsman crossed 50 or 100
         const crossedFifty = previousBatsmanScore < 50 && currentBatsmanScore >= 50 && !this.milestonesReached.includes(`${currentBatsman.name}_50`);
         const crossedCentury = previousBatsmanScore < 100 && currentBatsmanScore >= 100 && !this.milestonesReached.includes(`${currentBatsman.name}_100`);
-        
+
         if (crossedCentury) {
             this.milestonesReached.push(`${currentBatsman.name}_100`);
             this.celebrateMilestone('century', currentBatsman.name);
@@ -1593,33 +1595,33 @@ class Game {
             this.celebrateMilestone('fifty', currentBatsman.name);
         }
     }
-    
+
     celebrateMilestone(milestone, batsmanName) {
         // Set celebration flag to prevent next ball during animation
         this.celebrationInProgress = true;
-        
+
         // Trigger batsman celebration animation
         this.batsman.celebrate(milestone);
-        
+
         // Pause the game temporarily for celebration (but not if game is ending)
         if (!this.isGameOver()) {
             this.gameLoopPaused = true;
         }
-        
+
         if (milestone === 'century') {
             // Century celebration - more elaborate
             // Shorten the text to prevent overflow and make it more punchy
             const shortName = batsmanName.split(' ').pop(); // Use last name only
             this.showFeedback(`💯 ${shortName} CENTURY! 💯`, '#FFD700');
             this.playSound('cheer', 1.5, 0.8);
-            
+
             // Create special century particles
             this.createCelebrationParticles(this.batsman.x, this.batsman.y - 30, 80, '#FFD700');
-            
+
             // Screen effects
             this.wrapper.style.animation = 'celebrate 1s ease-in-out';
             this.wrapper.style.backgroundColor = 'rgba(255, 215, 0, 0.2)';
-            
+
             setTimeout(() => {
                 this.wrapper.style.animation = '';
                 this.wrapper.style.backgroundColor = '';
@@ -1639,20 +1641,20 @@ class Game {
                     }, 500);
                 }
             }, 3000);
-            
+
         } else if (milestone === 'fifty') {
             // Fifty celebration - moderate
             // Shorten the text to prevent overflow
             const shortName = batsmanName.split(' ').pop(); // Use last name only
             this.showFeedback(`⭐ ${shortName} FIFTY! ⭐`, '#01FF70');
             this.playSound('cheer', 1.2, 0.6);
-            
+
             // Create fifty particles
             this.createCelebrationParticles(this.batsman.x, this.batsman.y - 30, 50, '#01FF70');
-            
+
             // Mild screen effect
             this.wrapper.style.backgroundColor = 'rgba(1, 255, 112, 0.15)';
-            
+
             setTimeout(() => {
                 this.wrapper.style.backgroundColor = '';
                 this.celebrationInProgress = false;
@@ -1673,7 +1675,7 @@ class Game {
             }, 2500);
         }
     }
-    
+
     createCelebrationParticles(x, y, count, color) {
         for (let i = 0; i < count; i++) {
             // Enhanced particle spread and variety
@@ -1681,7 +1683,7 @@ class Game {
             const distance = 80 + Math.random() * 70;
             const spreadX = Math.cos(angle) * distance;
             const spreadY = Math.sin(angle) * distance;
-            
+
             this.particles.push({
                 x: x + spreadX,
                 y: y + spreadY,
@@ -1696,7 +1698,7 @@ class Game {
                 rotationSpeed: (Math.random() - 0.5) * 0.2
             });
         }
-        
+
         // Add extra burst effect for celebration
         for (let i = 0; i < count / 2; i++) {
             this.particles.push({
@@ -1720,18 +1722,18 @@ class Game {
             p.x += p.speedX;
             p.y += p.speedY;
             p.life -= deltaTime * 2;
-            
+
             // Update rotation if particle has it
             if (p.rotation !== undefined && p.rotationSpeed !== undefined) {
                 p.rotation += p.rotationSpeed;
             }
-            
+
             // Add gravity effect for celebration particles
             if (p.type === 'celebration') {
                 p.speedY += deltaTime * 20; // Gravity
                 p.speedX *= 0.99; // Air resistance
             }
-            
+
             if (p.life <= 0) {
                 this.particles.splice(i, 1);
             }
@@ -1740,14 +1742,14 @@ class Game {
     drawParticles() {
         this.particles.forEach(p => {
             this.ctx.globalAlpha = p.life;
-            
+
             // Apply glow effect based on particle type
             if (p.glow) {
                 this.ctx.shadowColor = p.color;
-                this.ctx.shadowBlur = p.type === 'boundary' ? 25 : 
-                                  p.type === 'celebration' ? 20 : 15;
+                this.ctx.shadowBlur = p.type === 'boundary' ? 25 :
+                    p.type === 'celebration' ? 20 : 15;
             }
-            
+
             // Draw different shapes based on particle type
             switch (p.type) {
                 case 'boundary':
@@ -1774,39 +1776,39 @@ class Game {
                     this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                     this.ctx.fill();
             }
-            
+
             this.ctx.shadowBlur = 0;
         });
         this.ctx.globalAlpha = 1.0;
     }
-    
+
     // Draw a star shape for special effects
     drawStar(cx, cy, innerRadius, outerRadius, points) {
         let rot = Math.PI / 2 * 3;
         let x = cx;
         let y = cy;
         const step = Math.PI / points;
-        
+
         this.ctx.beginPath();
         this.ctx.moveTo(cx, cy - outerRadius);
-        
+
         for (let i = 0; i < points; i++) {
             x = cx + Math.cos(rot) * outerRadius;
             y = cy + Math.sin(rot) * outerRadius;
             this.ctx.lineTo(x, y);
             rot += step;
-            
+
             x = cx + Math.cos(rot) * innerRadius;
             y = cy + Math.sin(rot) * innerRadius;
             this.ctx.lineTo(x, y);
             rot += step;
         }
-        
+
         this.ctx.lineTo(cx, cy - outerRadius);
         this.ctx.closePath();
         this.ctx.fill();
     }
-    
+
     // Enhanced sparkle for celebrations
     drawEnhancedSparkle(cx, cy, size) {
         // Draw main star shape
@@ -1824,23 +1826,23 @@ class Game {
         }
         this.ctx.closePath();
         this.ctx.fill();
-        
+
         // Add inner glow circle
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, size * 0.3, 0, Math.PI * 2);
         this.ctx.fill();
     }
-    
+
     returnToMenu() {
         // Remove all tournament overlays and results
         document.querySelectorAll('.tournament-results-overlay, .tournament-overlay').forEach(el => el.remove());
-        
+
         // Reset tournament mode state
         this.isTournamentMode = false;
         this.tournamentManager = null;
         this.lastMatchResult = null;
         this.celebrationInProgress = false; // Reset celebration state
-        
+
         // Show main menu
         this.menu.style.display = 'flex';
         this.wrapper.classList.remove('playing');
@@ -1849,15 +1851,15 @@ class Game {
         this.scorecardBtn.style.display = 'none';
         this.feedbackText.style.opacity = 0;
         this.hideScorecard();
-        
+
         // Hide team selection and display screens
         this.teamSelection.style.display = 'none';
         this.teamDisplay.style.display = 'none';
-        
+
         // Reset game state
         this.gameState = 'menu';
     }
-    
+
     showTournamentResults() {
         // Hide game elements
         this.wrapper.classList.remove('playing');
@@ -1866,27 +1868,27 @@ class Game {
         this.scorecardBtn.style.display = 'none';
         this.feedbackText.style.opacity = 0;
         this.hideScorecard();
-        
+
         // Show tournament results
         this.showTournamentResultsScreen();
     }
-    
+
     showTournamentResultsScreen() {
         // Remove any existing tournament results
         const existingResults = document.getElementById('tournamentResults');
         if (existingResults) {
             existingResults.remove();
         }
-        
+
         // Create tournament results screen
         const resultsDiv = document.createElement('div');
         resultsDiv.id = 'tournamentResults';
         resultsDiv.className = 'tournament-results-overlay';
-        
+
         const tournamentData = this.tournamentManager.getTournamentData();
         const isComplete = tournamentData.isComplete;
         const hasNextMatch = tournamentData.currentMatch !== null;
-        
+
         // Start building HTML early to avoid use-before-declaration
         let resultHTML = `
             <div class="tournament-results-content">
@@ -1903,7 +1905,7 @@ class Game {
             const updatedTournamentData = this.tournamentManager.getTournamentData();
             const updatedHasNextMatch = updatedTournamentData.currentMatch !== null;
             const canStillQualify = updatedHasNextMatch ? false : this.tournamentManager.canUserStillQualify();
-            
+
             // Use updated data
             if (updatedHasNextMatch) {
                 const nextMatchInfo = this.tournamentManager.getCurrentMatchInfo();
@@ -1924,13 +1926,13 @@ class Game {
                 return;
             }
         }
-        
+
         // Check if user can still qualify (only if tournament not complete and no current match)
         const canStillQualify = !isComplete && !hasNextMatch ? this.tournamentManager.canUserStillQualify() : false;
-        
+
         if (isComplete) {
             const userWonTournament = tournamentData.tournamentWinner && tournamentData.tournamentWinner.id === this.userTeam.id;
-            
+
             if (userWonTournament) {
                 resultHTML += `
                     <div class="tournament-victory">
@@ -1991,28 +1993,28 @@ class Game {
                 </div>
             `;
         }
-        
+
         resultHTML += `</div>`;
         resultsDiv.innerHTML = resultHTML;
-        
+
         document.body.appendChild(resultsDiv);
     }
-    
+
     showPointsTable() {
         if (!this.tournamentManager) {
             console.error('Tournament manager not initialized');
             return;
         }
-        
+
         try {
             const pointsTable = this.tournamentManager.getPointsTable();
-            
+
             // Remove existing overlays
             document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
-            
+
             const overlayDiv = document.createElement('div');
             overlayDiv.className = 'tournament-overlay points-table-overlay';
-            
+
             let tableHTML = `
                 <div class="tournament-content">
                     <h2>Points Table</h2>
@@ -2032,7 +2034,7 @@ class Game {
                                 </thead>
                                 <tbody>
             `;
-            
+
             pointsTable.groupA.forEach(team => {
                 const isUserTeam = team.team.id === this.userTeam.id;
                 tableHTML += `
@@ -2046,7 +2048,7 @@ class Game {
                     </tr>
                 `;
             });
-            
+
             tableHTML += `
                                 </tbody>
                             </table>
@@ -2066,7 +2068,7 @@ class Game {
                                 </thead>
                                 <tbody>
             `;
-            
+
             pointsTable.groupB.forEach(team => {
                 const isUserTeam = team.team.id === this.userTeam.id;
                 tableHTML += `
@@ -2080,7 +2082,7 @@ class Game {
                     </tr>
                 `;
             });
-            
+
             tableHTML += `
                                 </tbody>
                             </table>
@@ -2089,42 +2091,42 @@ class Game {
                     <button class="menu-btn tournament-btn" onclick="game.closeTournamentOverlay()">Close</button>
                 </div>
             `;
-            
+
             overlayDiv.innerHTML = tableHTML;
             document.body.appendChild(overlayDiv);
         } catch (error) {
             console.error('Error showing points table:', error);
         }
     }
-    
+
     showFixtures() {
         if (!this.tournamentManager) {
             console.error('Tournament manager not initialized');
             return;
         }
-        
+
         try {
             const fixtures = this.tournamentManager.getFixtures();
-            
+
             // Remove existing overlays
             document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
-            
+
             const overlayDiv = document.createElement('div');
             overlayDiv.className = 'tournament-overlay fixtures-overlay';
-            
+
             let fixturesHTML = `
                 <div class="tournament-content">
                     <h2>Tournament Fixtures</h2>
                     <div class="fixtures-container">
             `;
-            
+
             const groupAMatches = fixtures.filter(f => f.type === 'Group A');
             const groupBMatches = fixtures.filter(f => f.type === 'Group B');
             const finalMatch = fixtures.filter(f => f.type === 'Final');
-            
+
             fixturesHTML += `<div class="fixture-group">
                                 <h3>Group A Matches</h3>`;
-            
+
             groupAMatches.forEach(match => {
                 const statusClass = match.completed ? 'completed' : 'pending';
                 fixturesHTML += `
@@ -2134,10 +2136,10 @@ class Game {
                     </div>
                 `;
             });
-            
+
             fixturesHTML += `</div><div class="fixture-group">
                                 <h3>Group B Matches</h3>`;
-            
+
             groupBMatches.forEach(match => {
                 const statusClass = match.completed ? 'completed' : 'pending';
                 fixturesHTML += `
@@ -2147,9 +2149,9 @@ class Game {
                     </div>
                 `;
             });
-            
+
             fixturesHTML += `</div>`;
-            
+
             if (finalMatch.length > 0) {
                 fixturesHTML += `<div class="fixture-group">
                                     <h3>Final</h3>`;
@@ -2164,39 +2166,39 @@ class Game {
                 });
                 fixturesHTML += `</div>`;
             }
-            
+
             fixturesHTML += `
                     </div>
                     <button class="menu-btn tournament-btn" onclick="game.closeTournamentOverlay()">Close</button>
                 </div>
             `;
-            
+
             overlayDiv.innerHTML = fixturesHTML;
             document.body.appendChild(overlayDiv);
         } catch (error) {
             console.error('Error showing fixtures:', error);
         }
     }
-    
+
     closeTournamentOverlay() {
         document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
     }
-    
+
     playNextTournamentMatch() {
         // Remove tournament results
         document.querySelectorAll('.tournament-results-overlay, .tournament-overlay').forEach(el => el.remove());
-        
+
         // Reset game state for next match
         this.gameState = 'team_selection';
-        
+
         // Update opposition team for next match
         const nextMatchInfo = this.tournamentManager.getCurrentMatchInfo();
         if (nextMatchInfo) {
             this.oppositionTeam = nextMatchInfo.opposition;
-            
+
             // Generate new match conditions for tournament match (day/night and stadium)
             this.generateMatchConditions();
-            
+
             // Reset previous match data
             this.score = 0;
             this.balls = 0;
@@ -2207,13 +2209,13 @@ class Game {
             this.batsmanStats = [];
             this.bowlerStats = [];
             this.lastMatchResult = null;
-            
+
             // CRITICAL: Reset bowler state for new match
             this.currentBowler = null;
             this.previousOverBowler = null;
             this.milestonesReached = []; // Reset milestone tracking
             this.celebrationInProgress = false; // Reset celebration state
-            
+
             // Show team display for next match
             this.showTeamDisplay();
         } else {
@@ -2221,17 +2223,17 @@ class Game {
             this.returnToMenu();
         }
     }
-    
+
     checkTournamentProgress() {
         // Remove current overlays
         document.querySelectorAll('.tournament-overlay').forEach(el => el.remove());
-        
+
         // Get tournament data
         const tournamentData = this.tournamentManager.getTournamentData();
-        
+
         // Simulate any remaining AI vs AI matches to progress tournament
         const remainingAIMatches = tournamentData.totalMatches.filter(m => !m.isUserMatch && !m.result);
-        
+
         if (remainingAIMatches.length > 0) {
             // Complete all remaining AI matches
             remainingAIMatches.forEach(match => {
@@ -2241,10 +2243,10 @@ class Game {
                 this.tournamentManager.completedMatches.push(match);
             });
         }
-        
+
         // After completing AI matches, check if user can progress
         this.tournamentManager.findNextUserMatch();
-        
+
         // Show updated tournament status
         setTimeout(() => {
             this.showTournamentResults();

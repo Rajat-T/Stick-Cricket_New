@@ -599,13 +599,13 @@ body {
     right: 20px;
     background: rgba(10, 25, 47, 0.9);
     backdrop-filter: blur(8px);
-    padding: 15px 22px;
+    padding: 12px 18px; /* Match overTracker's padding */
     border-radius: 15px;
     border: 2px solid rgba(255, 215, 0, 0.7);
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5),
         inset 0 0 15px rgba(255, 215, 0, 0.2);
-    min-width: 170px;
-    min-height: 55px;
+    min-width: 160px; /* Match overTracker's min-width */
+    min-height: 45px; /* Match overTracker's min-height */
     text-align: center;
     transition: all 0.3s ease;
     z-index: 20;
@@ -1186,14 +1186,15 @@ body {
         right: 15px;
         min-width: 130px;
         padding: 10px 15px;
+        min-height: 45px;
     }
 
     #currentBatsmen {
         top: 165px;
         right: 15px;
-        min-width: 140px;
-        padding: 12px 18px;
-        min-height: 55px;
+        min-width: 130px;
+        padding: 10px 15px;
+        min-height: 45px;
     }
 
     .ball-outcome {

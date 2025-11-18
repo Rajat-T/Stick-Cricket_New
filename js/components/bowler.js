@@ -8,10 +8,11 @@ class Bowler extends Character {
         this.animState = 'idle';
         this.armAngle = 0;
     }
-    startDelivery() {
+    startDelivery(onRelease) {
         this.animState = 'runup';
         this.y = this.initialY;
         this.armAngle = 0;
+        this.onRelease = onRelease;
     }
     update(dt) {
         if (this.animState === 'runup') {
@@ -19,6 +20,10 @@ class Bowler extends Character {
             if (this.y >= this.targetY) {
                 this.y = this.targetY;
                 this.animState = 'deliver';
+                if (this.onRelease) {
+                    this.onRelease();
+                    this.onRelease = null; // Ensure it only fires once
+                }
             }
         } else if (this.animState === 'deliver') {
             this.armAngle += dt * 10;
