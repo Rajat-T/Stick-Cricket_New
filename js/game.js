@@ -17,7 +17,6 @@ class Game {
             this.setupAudioContext();
             this.loadSoundFiles();
         } catch (error) {
-            console.error('Error initializing audio system:', error);
             // Fallback: create dummy audio system so game doesn't break
             this.audioContext = null;
             this.particles = [];
@@ -425,7 +424,6 @@ class Game {
     selectBowler() {
         // Safety check: ensure we have an opposition team
         if (!this.oppositionTeam || !this.oppositionTeam.players) {
-            console.error('No opposition team available for bowler selection');
             return;
         }
 
@@ -534,7 +532,6 @@ class Game {
     updateBowlerStats(runs = 0, isWicket = false) {
         // Only update stats for the current bowler who is actually bowling this ball
         if (!this.currentBowler) {
-            console.warn('No current bowler set - cannot update bowling stats');
             return;
         }
 
@@ -565,12 +562,9 @@ class Game {
             const completedOvers = Math.floor((bowlerStat.balls - 1) / 6);
         }
 
-        // Check if bowler has exceeded max overs (for debugging)
+        // Check if bowler has exceeded max overs
         if (this.maxOvers && this.maxOvers > 0) {
             const maxOversPerBowler = Math.min(4, Math.floor(this.maxOvers / 5));
-            if (bowlerOvers > maxOversPerBowler) {
-                console.error(`ERROR: ${bowlerName} has bowled ${bowlerOvers} overs, exceeding the limit of ${maxOversPerBowler} overs!`);
-            }
         }
     }
     showScorecard() {
@@ -979,13 +973,12 @@ class Game {
                             setTimeout(() => this.wrapper.style.animation = '', 500);
                             // Extra particles for sixes
                             this.createBoundaryParticles(this.ball.pos.x, 50, 20, '#FF4136');
-                            // Play six hit sound but don't wait for it
-                            console.log('🔊 Starting six sound playback...');
-                            this.playSoundFile('six_hit', 0.8).then(() => {
-                                console.log('✅ Six sound finished');
-                            }).catch((error) => {
-                                console.warn('⚠️ Six sound failed:', error);
-                            });
+                            // Play six hit sound
+                            if (this.playSoundFile) {
+                                this.playSoundFile('six_hit', 0.8).then(() => {
+                                }).catch(error => {
+                                });
+                            }
                         }
                     } else {
                         // Regular particles for 1s, 2s, 3s
@@ -1081,21 +1074,18 @@ class Game {
         }
     }
     handleWicket(type, runsScoredOnWicket) {
-        console.log('🏏 Wicket handler called - type:', type);
 
         // 1. Play wicket sound effects
         this.playSound('wicket', 1, 0.6);
 
-        // 2. Play the sound file but don't wait for it - just play and continue
-        console.log('🔊 Starting wicket sound playback...');
-        this.playSoundFile('wicket_fallen', 0.7).then(() => {
-            console.log('✅ Wicket sound finished');
-        }).catch((error) => {
-            console.warn('⚠️ Wicket sound failed:', error);
-        });
+        // 2. Play the sound file        // Play wicket sound
+        if (this.playSoundFile) {
+            this.playSoundFile('wicket_fallen', 0.7).then(() => {
+            }).catch(error => {
+            });
+        }
 
-        // 3. Continue with normal wicket processing without waiting
-        console.log('🚀 Continuing with wicket processing...');
+        // Continue with wicket processing
 
         // 4. Update all relevant statistics for the dismissal.
         this.wicketsTaken++;
@@ -1167,7 +1157,7 @@ class Game {
                 this.batsmanStats.push(batsmanStatEntry);
                 batsmanIndex = this.batsmanStats.length - 1;
             } else {
-                console.warn("No more batsmen to track stats for.");
+                // No active batsmen - this shouldn't happen
                 return;
             }
         } else {
@@ -1374,7 +1364,6 @@ class Game {
                 // Store match result for display
                 this.lastMatchResult = matchResult;
             } else {
-                console.error('Tournament manager not initialized!');
                 // Fallback for debugging
                 this.lastMatchResult = {
                     resultText: isWin ? `You won by ${this.score - oppositionScore} runs` : `You lost by ${oppositionScore - this.score} runs`
@@ -2002,7 +1991,6 @@ class Game {
 
     showPointsTable() {
         if (!this.tournamentManager) {
-            console.error('Tournament manager not initialized');
             return;
         }
 
@@ -2095,13 +2083,11 @@ class Game {
             overlayDiv.innerHTML = tableHTML;
             document.body.appendChild(overlayDiv);
         } catch (error) {
-            console.error('Error showing points table:', error);
         }
     }
 
     showFixtures() {
         if (!this.tournamentManager) {
-            console.error('Tournament manager not initialized');
             return;
         }
 
@@ -2176,7 +2162,6 @@ class Game {
             overlayDiv.innerHTML = fixturesHTML;
             document.body.appendChild(overlayDiv);
         } catch (error) {
-            console.error('Error showing fixtures:', error);
         }
     }
 
@@ -2219,7 +2204,6 @@ class Game {
             // Show team display for next match
             this.showTeamDisplay();
         } else {
-            console.error('No next match available');
             this.returnToMenu();
         }
     }
@@ -2285,26 +2269,16 @@ class Game {
 
     setupAudioContext() {
         if (!this.audioContext) {
-            console.warn('AudioContext not available, skipping setup');
             return;
         }
-        console.log(`AudioContext initialized with state: ${this.audioContext.state}`);
-
-        // Log state changes
-        this.audioContext.onstatechange = () => {
-            console.log(`AudioContext state changed to: ${this.audioContext.state}`);
-        };
     }
 
     setupAudioContextHandlers() {
         // Resume AudioContext on user interaction (required by browsers)
         const resumeAudioContext = () => {
             if (this.audioContext.state === 'suspended') {
-                console.log('Resuming AudioContext due to user interaction');
                 this.audioContext.resume().then(() => {
-                    console.log('AudioContext resumed successfully');
                 }).catch(err => {
-                    console.error('Failed to resume AudioContext:', err);
                 });
             }
         };
@@ -2324,11 +2298,8 @@ class Game {
 
     loadSoundFiles() {
         if (!this.audioContext) {
-            console.warn('AudioContext not available, skipping sound loading');
             return;
         }
-
-        console.log('Loading sound files...');
         // Initialize HTML5 Audio elements as fallback
         try {
             this.sixAudio = new Audio('Music/Six_hit.mp3');
@@ -2340,7 +2311,6 @@ class Game {
             // Also try Web Audio API for better control
             this.loadWebAudioFiles();
         } catch (error) {
-            console.error('Error loading sound files:', error);
             // Don't break the game if audio loading fails
         }
     }
@@ -2348,19 +2318,15 @@ class Game {
     setupAudioElements() {
         // Set up HTML5 Audio elements
         this.sixAudio.addEventListener('canplaythrough', () => {
-            console.log('✅ HTML5 Audio: Six sound ready to play');
         });
 
         this.sixAudio.addEventListener('error', (e) => {
-            console.error('❌ HTML5 Audio: Error loading six sound:', e);
         });
 
         this.wicketAudio.addEventListener('canplaythrough', () => {
-            console.log('✅ HTML5 Audio: Wicket sound ready to play');
         });
 
         this.wicketAudio.addEventListener('error', (e) => {
-            console.error('❌ HTML5 Audio: Error loading wicket sound:', e);
         });
 
         // Preload the audio files
@@ -2391,7 +2357,6 @@ class Game {
     }
 
     loadSoundFile(name, url) {
-        console.log(`Attempting to load: ${url}`);
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -2402,16 +2367,12 @@ class Game {
             .then(arrayBuffer => this.audioContext.decodeAudioData(arrayBuffer))
             .then(audioBuffer => {
                 this.soundBuffers[name] = audioBuffer;
-                console.log(`✅ Successfully loaded sound file: ${name} (${audioBuffer.duration.toFixed(2)}s)`);
             })
             .catch(error => {
-                console.error(`❌ Error loading sound file ${name}:`, error);
             });
     }
 
     async playSoundFile(soundName, volume = 0.7) {
-        console.log(`🔊 Attempting to play sound: ${soundName}`);
-
         // Simple HTML5 Audio approach - most reliable
         return new Promise((resolve) => {
             try {
@@ -2423,7 +2384,6 @@ class Game {
                 }
 
                 if (!audioPath) {
-                    console.warn(`Unknown sound: ${soundName}`);
                     resolve();
                     return;
                 }
@@ -2434,7 +2394,6 @@ class Game {
 
                 // Set up quick timeout to ensure game continues
                 const timeoutId = setTimeout(() => {
-                    console.log(`Audio playback timeout for: ${soundName}`);
                     audio.removeEventListener('ended', onEnded);
                     audio.removeEventListener('error', onError);
                     resolve();
@@ -2442,13 +2401,11 @@ class Game {
 
                 const onEnded = () => {
                     clearTimeout(timeoutId);
-                    console.log(`✅ Audio finished: ${soundName}`);
                     resolve();
                 };
 
                 const onError = (e) => {
                     clearTimeout(timeoutId);
-                    console.warn(`⚠️ Audio error for ${soundName}:`, e);
                     resolve();
                 };
 
@@ -2460,12 +2417,10 @@ class Game {
                 if (playPromise) {
                     playPromise.catch(() => {
                         clearTimeout(timeoutId);
-                        console.warn(`⚠️ Audio play() failed for ${soundName}`);
                         resolve();
                     });
                 }
             } catch (error) {
-                console.error(`❌ Error in playSoundFile for ${soundName}:`, error);
                 resolve();
             }
         });
@@ -2474,8 +2429,6 @@ class Game {
     playHTML5Audio(audioElement, soundName, volume) {
         return new Promise((resolve) => {
             try {
-                console.log(`🎵 Playing ${soundName} using HTML5 Audio`);
-
                 // Set volume
                 audioElement.volume = volume;
 
@@ -2484,7 +2437,6 @@ class Game {
 
                 // Set up ended event handler
                 const onEnded = () => {
-                    console.log(`✅ HTML5 Audio finished playing: ${soundName}`);
                     audioElement.removeEventListener('ended', onEnded);
                     resolve();
                 };
@@ -2493,7 +2445,6 @@ class Game {
 
                 // Handle errors
                 const onError = (e) => {
-                    console.error(`❌ HTML5 Audio error playing ${soundName}:`, e);
                     audioElement.removeEventListener('error', onError);
                     audioElement.removeEventListener('ended', onEnded);
                     resolve();
@@ -2507,32 +2458,25 @@ class Game {
                 // Handle play() promise (returns promise in modern browsers)
                 if (playPromise) {
                     playPromise.then(() => {
-                        console.log(`✅ HTML5 Audio started playing: ${soundName}`);
                     }).catch(error => {
-                        console.error(`❌ HTML5 Audio play() failed for ${soundName}:`, error);
                         audioElement.removeEventListener('ended', onEnded);
                         audioElement.removeEventListener('error', onError);
                         resolve();
                     });
                 }
             } catch (error) {
-                console.error(`❌ Error playing HTML5 Audio ${soundName}:`, error);
                 resolve();
             }
         });
     }
 
     async playWebAudio(soundName, volume = 0.7) {
-        console.log(`🔊 Attempting to play ${soundName} using Web Audio API`);
-
         // Check if AudioContext is suspended and resume it
         if (this.audioContext.state === 'suspended') {
-            console.log('AudioContext is suspended, resuming...');
             await this.audioContext.resume();
         }
 
         if (!this.soundBuffers[soundName]) {
-            console.warn(`⚠️ Sound file ${soundName} not loaded yet in Web Audio API`);
             return Promise.resolve();
         }
 
@@ -2548,14 +2492,11 @@ class Game {
                 gainNode.connect(this.audioContext.destination);
 
                 source.onended = () => {
-                    console.log(`✅ Web Audio finished playing: ${soundName}`);
                     resolve();
                 };
 
-                console.log(`🎵 Starting Web Audio playback of: ${soundName} at volume ${volume}`);
                 source.start();
             } catch (error) {
-                console.error(`❌ Error playing Web Audio ${soundName}:`, error);
                 resolve();
             }
         });
