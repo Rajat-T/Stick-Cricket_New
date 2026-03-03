@@ -73,10 +73,10 @@ class Fielder extends Character {
         const scale = 0.6 + (this.y / H) * 0.4;
         this.w = 30 * scale;
         this.h = 50 * scale;
-        
+
         this.ctx.save();
         this.ctx.translate(this.x, this.y);
-        
+
         // Enhanced fielder with better proportions and colors
         // Head
         const headRadius = this.h * 0.1;
@@ -90,7 +90,7 @@ class Fielder extends Character {
         this.ctx.strokeStyle = '#333';
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
-        
+
         // Body with cricket jersey
         const bodyGradient = this.ctx.createLinearGradient(0, -this.h * 0.7, 0, -this.h * 0.3);
         bodyGradient.addColorStop(0, '#ffffff');
@@ -102,44 +102,44 @@ class Fielder extends Character {
         this.ctx.moveTo(0, -this.h * 0.7);
         this.ctx.lineTo(0, -this.h * 0.3);
         this.ctx.stroke();
-        
+
         // Arms
         this.ctx.strokeStyle = '#f1c40f';
         this.ctx.lineWidth = 2;
-        
+
         // Left arm
         this.ctx.beginPath();
         this.ctx.moveTo(0, -this.h * 0.6);
         this.ctx.lineTo(-this.w * 0.3, -this.h * 0.5);
         this.ctx.stroke();
-        
+
         // Right arm
         this.ctx.beginPath();
         this.ctx.moveTo(0, -this.h * 0.6);
         this.ctx.lineTo(this.w * 0.3, -this.h * 0.5);
         this.ctx.stroke();
-        
+
         // Legs
         this.ctx.strokeStyle = '#2c3e50';
         this.ctx.lineWidth = 3;
-        
+
         // Left leg
         this.ctx.beginPath();
         this.ctx.moveTo(0, -this.h * 0.3);
         this.ctx.lineTo(-this.w * 0.15, this.h * 0.1);
         this.ctx.stroke();
-        
+
         // Right leg
         this.ctx.beginPath();
         this.ctx.moveTo(0, -this.h * 0.3);
         this.ctx.lineTo(this.w * 0.15, this.h * 0.1);
         this.ctx.stroke();
-        
+
         // Enhanced catching animation
         if (this.isCatching) {
             // Rotate body for diving catch
             this.ctx.rotate(-Math.PI / 6);
-            
+
             // Add catch effect - glowing hands
             this.ctx.fillStyle = 'rgba(1, 255, 112, 0.7)';
             this.ctx.beginPath();
@@ -148,7 +148,7 @@ class Fielder extends Character {
             this.ctx.beginPath();
             this.ctx.arc(this.w * 0.3, -this.h * 0.5, 5, 0, Math.PI * 2);
             this.ctx.fill();
-            
+
             // Add "CATCH!" text above fielder
             this.ctx.fillStyle = '#01FF70';
             this.ctx.font = 'bold 14px Arial';
@@ -161,7 +161,7 @@ class Fielder extends Character {
             this.ctx.textAlign = 'center';
             this.ctx.fillText('SAVE!', 0, -this.h - 10);
         }
-        
+
         this.ctx.restore();
     }
 }

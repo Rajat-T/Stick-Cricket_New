@@ -1096,8 +1096,11 @@ class Game {
         if (type !== 'Run Out!') {
             this.updateBowlerStats(runsScoredOnWicket, true);
         } else {
-            // For run-outs, we still need to record the wicket for the bowler, but runs were already added
-            this.updateBowlerStats(0, true); // Only add the wicket, runs already credited
+            // For run-outs, we still need to record the wicket for the bowler, and attribute the runs
+            // Note: runs were already added to the team score, but we need to ensure they are added to the bowler's stats
+            // Actually, in the hit handling logic, updateBowlerStats is NOT called if a run-out occurs.
+            // Let's ensure the bowler gets the runs scored before the run out for consistency.
+            this.updateBowlerStats(runsScoredOnWicket, true);
         }
         this.incrementBall();
         this.updateScoreboard();
@@ -1178,11 +1181,11 @@ class Game {
             // Only increment balls if this is not a run-out (run-outs already had balls counted in the 'runs' event)
             if (value !== 'Run Out!') {
                 batsmanStatEntry.balls += 1;
+                // Only add the runs that were actually completed for non-run-outs
+                batsmanStatEntry.runs += runsScored;
+                if (runsScored === 4) batsmanStatEntry.fours += 1;
+                if (runsScored === 6) batsmanStatEntry.sixes += 1;
             }
-            // Only add the runs that were actually completed (this may adjust for cases like run-out)
-            batsmanStatEntry.runs += runsScored;
-            if (runsScored === 4) batsmanStatEntry.fours += 1;
-            if (runsScored === 6) batsmanStatEntry.sixes += 1;
             batsmanStatEntry.bowler = this.currentBowler.name;
         }
 
