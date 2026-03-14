@@ -557,15 +557,7 @@ class Game {
         const bowlerOvers = Math.floor(bowlerStat.balls / 6);
         const bowlerBallsInOver = bowlerStat.balls % 6;
 
-        // Check if bowler has completed an over
-        if (bowlerBallsInOver === 1 && bowlerStat.balls > 1) { // First ball of a new over (after completing previous)
-            const completedOvers = Math.floor((bowlerStat.balls - 1) / 6);
-        }
 
-        // Check if bowler has exceeded max overs
-        if (this.maxOvers && this.maxOvers > 0) {
-            const maxOversPerBowler = Math.min(4, Math.floor(this.maxOvers / 5));
-        }
     }
     showScorecard() {
         this.gameLoopPaused = true;
@@ -890,132 +882,116 @@ class Game {
             this.playSound('hit', 0.8 + Math.random() * 0.2, 0.5);
             this.createParticles(this.ball.pos.x, this.ball.pos.y - this.ball.pos.z, 10, result.color);
 
-            const isMishit = result.timingScore < 2;
-            const isLofted = this.ball.vel.z > 40;
-            const isCaught = false;
+            const isPoorShot = result.timingScore <= 1; // Early, Late, Too Early, Too Late
+            let actualRunsScored = result.runs; // Track the actual runs scored on this ball after all events
 
-            if (isCaught) {
-                this.handleWicket('Caught!', result.runs);
-                const catcher = this.fielders.sort((a, b) =>
-                    Math.hypot(a.x - this.ball.pos.x, a.y - this.ball.pos.y) -
-                    Math.hypot(b.x - this.ball.pos.x, b.y - this.ball.pos.y)
-                )[0];
-                if (catcher) {
-                    catcher.isCatching = true;
-                    this.ball.travelTo(catcher.x, catcher.y);
-                }
-            } else {
-                const isPoorShot = result.timingScore <= 1; // Early, Late, Too Early, Too Late
-                let actualRunsScored = result.runs; // Track the actual runs scored on this ball after all events
+            if (isPoorShot && result.runs > 0 && result.runs < 4) { // Only on singles, doubles, triples
+                const runOutChance = 0.1; // 10% chance of a run-out on a poor shot
+                if (Math.random() < runOutChance) {
+                    // Find the closest fielder
+                    const closestFielder = this.fielders.sort((a, b) =>
+                        Math.hypot(a.x - this.ball.pos.x, a.y - this.ball.pos.y) -
+                        Math.hypot(b.x - this.ball.pos.x, b.y - this.ball.pos.y)
+                    )[0];
 
-                if (isPoorShot && result.runs > 0 && result.runs < 4) { // Only on singles, doubles, triples
-                    const runOutChance = 0.1; // 10% chance of a run-out on a poor shot
-                    if (Math.random() < runOutChance) {
-                        // Find the closest fielder
-                        const closestFielder = this.fielders.sort((a, b) =>
-                            Math.hypot(a.x - this.ball.pos.x, a.y - this.ball.pos.y) -
-                            Math.hypot(b.x - this.ball.pos.x, b.y - this.ball.pos.y)
-                        )[0];
+                    if (closestFielder) {
+                        // Animate the fielder throwing the ball to the wickets
+                        this.ball.travelTo(this.wicketsObject.x, this.wicketsObject.y);
+                        actualRunsScored = result.runs - 1; // Only the completed runs count in a run-out
+                        // Adjust the score to reflect the actual runs completed
+                        this.score += actualRunsScored;
 
-                        if (closestFielder) {
-                            // Animate the fielder throwing the ball to the wickets
-                            this.ball.travelTo(this.wicketsObject.x, this.wicketsObject.y);
-                            actualRunsScored = result.runs - 1; // Only the completed runs count in a run-out
-                            // Adjust the score to reflect the actual runs completed
-                            this.score += actualRunsScored;
+                        // Update batsman stats with the actual runs scored
+                        this.updateBatsmanStats('runs', actualRunsScored);
 
-                            // Update batsman stats with the actual runs scored
-                            this.updateBatsmanStats('runs', actualRunsScored);
-
-                            this.handleWicket('Run Out!', actualRunsScored); // Batsman completes actual runs before being run out
-                            return;
-                        }
+                        this.handleWicket('Run Out!', actualRunsScored); // Batsman completes actual runs before being run out
+                        return;
                     }
                 }
-
-                // If no run-out occurred, add the runs normally
-                this.score += actualRunsScored;
-                this.updateBatsmanStats('runs', actualRunsScored);
-
-                // Check for individual batsman milestone celebrations (50 and 100) - only if not a wicket
-                this.checkIndividualMilestoneCelebration(actualRunsScored);
-
-                this.updateBowlerStats(actualRunsScored);
-                if (this.gameMode === 'runChase' && this.score >= this.targetRuns) {
-                    this.showFeedback(`Chase Complete! ${this.score}/${this.targetRuns}`, '#01FF70');
-                    setTimeout(() => this.endGame(), 2000);
-                    return;
-                }
-                if (this.gameMode === 'tournament' && this.isTournamentMode && this.tournamentTarget && this.score >= this.tournamentTarget) {
-                    this.showFeedback(`Chase Complete! ${this.score}/${this.tournamentTarget}`, '#01FF70');
-                    setTimeout(() => this.endGame(), 2000);
-                    return;
-                }
-                if (result.runs === 4) this.fours++;
-                if (result.runs === 6) this.sixes++;
-                this.recordBallOutcome(result.runs);
-                this.incrementBall();
-                this.updateScoreboard();
-                if (this.gameMode === 'challenge' && this.score >= this.targetRuns) {
-                    this.showFeedback('Target Achieved!', '#01FF70');
-                    setTimeout(() => this.endGame(), 3000);
-                    return;
-                }
-                if (result.runs === 0) {
-                    this.showFeedback('DOT BALL', '#FFFFFF');
-                } else {
-                    this.playSound('cheer', 1, 0.2);
-                    if (result.runs >= 4) {
-                        // Create special boundary particles
-                        this.createBoundaryParticles(this.ball.pos.x, 50, 30, '#FFD700');
-                        if (result.runs === 6) {
-                            this.wrapper.style.animation = 'shake 0.5s';
-                            setTimeout(() => this.wrapper.style.animation = '', 500);
-                            // Extra particles for sixes
-                            this.createBoundaryParticles(this.ball.pos.x, 50, 20, '#FF4136');
-                            // Play six hit sound
-                            if (this.playSoundFile) {
-                                this.playSoundFile('six_hit', 0.8).then(() => {
-                                }).catch(error => {
-                                });
-                            }
-                        }
-                    } else {
-                        // Regular particles for 1s, 2s, 3s
-                        this.createParticles(this.ball.pos.x, 50, 8, '#ffffff');
-                    }
-                }
-                this.ball.isActive = false;
-                this.gameState = 'between_balls';
-                this.awaitingNextBall = true;
-
-                // If match ended on this delivery (e.g., overs exhausted in chase), end gracefully
-                if (this.isGameOver()) {
-                    setTimeout(() => this.endGame(), 1500);
-                    return;
-                }
-
-                // Check if celebration is in progress and adjust delay accordingly
-                let nextBallDelay = result.runs === 0 ? 1500 : 2000;
-                if (this.celebrationInProgress) {
-                    nextBallDelay += 3000; // Add extra delay for celebration
-                }
-
-                // Clear any existing next ball timeout to prevent race conditions
-                if (this.nextBallTimeout) {
-                    clearTimeout(this.nextBallTimeout);
-                }
-
-                this.nextBallTimeout = setTimeout(() => {
-                    if (this.gameState === 'between_balls' && !this.celebrationInProgress) {
-                        // Only call nextBall if game is not paused
-                        if (!this.gameLoopPaused) {
-                            this.nextBall();
-                        }
-                    }
-                    this.nextBallTimeout = null; // Clear timeout reference
-                }, nextBallDelay);
             }
+
+            // If no run-out occurred, add the runs normally
+            this.score += actualRunsScored;
+            this.updateBatsmanStats('runs', actualRunsScored);
+
+            // Check for individual batsman milestone celebrations (50 and 100) - only if not a wicket
+            this.checkIndividualMilestoneCelebration(actualRunsScored);
+
+            this.updateBowlerStats(actualRunsScored);
+            if (this.gameMode === 'runChase' && this.score >= this.targetRuns) {
+                this.showFeedback(`Chase Complete! ${this.score}/${this.targetRuns}`, '#01FF70');
+                setTimeout(() => this.endGame(), 2000);
+                return;
+            }
+            if (this.gameMode === 'tournament' && this.isTournamentMode && this.tournamentTarget && this.score >= this.tournamentTarget) {
+                this.showFeedback(`Chase Complete! ${this.score}/${this.tournamentTarget}`, '#01FF70');
+                setTimeout(() => this.endGame(), 2000);
+                return;
+            }
+            if (result.runs === 4) this.fours++;
+            if (result.runs === 6) this.sixes++;
+            this.recordBallOutcome(result.runs);
+            this.incrementBall();
+            this.updateScoreboard();
+            if (this.gameMode === 'challenge' && this.score >= this.targetRuns) {
+                this.showFeedback('Target Achieved!', '#01FF70');
+                setTimeout(() => this.endGame(), 3000);
+                return;
+            }
+            if (result.runs === 0) {
+                this.showFeedback('DOT BALL', '#FFFFFF');
+            } else {
+                this.playSound('cheer', 1, 0.2);
+                if (result.runs >= 4) {
+                    // Create special boundary particles
+                    this.createBoundaryParticles(this.ball.pos.x, 50, 30, '#FFD700');
+                    if (result.runs === 6) {
+                        this.wrapper.style.animation = 'shake 0.5s';
+                        setTimeout(() => this.wrapper.style.animation = '', 500);
+                        // Extra particles for sixes
+                        this.createBoundaryParticles(this.ball.pos.x, 50, 20, '#FF4136');
+                        // Play six hit sound
+                        if (this.playSoundFile) {
+                            this.playSoundFile('six_hit', 0.8).then(() => {
+                            }).catch(error => {
+                            });
+                        }
+                    }
+                } else {
+                    // Regular particles for 1s, 2s, 3s
+                    this.createParticles(this.ball.pos.x, 50, 8, '#ffffff');
+                }
+            }
+            this.ball.isActive = false;
+            this.gameState = 'between_balls';
+            this.awaitingNextBall = true;
+
+            // If match ended on this delivery (e.g., overs exhausted in chase), end gracefully
+            if (this.isGameOver()) {
+                setTimeout(() => this.endGame(), 1500);
+                return;
+            }
+
+            // Check if celebration is in progress and adjust delay accordingly
+            let nextBallDelay = result.runs === 0 ? 1500 : 2000;
+            if (this.celebrationInProgress) {
+                nextBallDelay += 3000; // Add extra delay for celebration
+            }
+
+            // Clear any existing next ball timeout to prevent race conditions
+            if (this.nextBallTimeout) {
+                clearTimeout(this.nextBallTimeout);
+            }
+
+            this.nextBallTimeout = setTimeout(() => {
+                if (this.gameState === 'between_balls' && !this.celebrationInProgress) {
+                    // Only call nextBall if game is not paused
+                    if (!this.gameLoopPaused) {
+                        this.nextBall();
+                    }
+                }
+                this.nextBallTimeout = null; // Clear timeout reference
+            }, nextBallDelay);
         }
     }
     onBallMissed() {
@@ -2429,49 +2405,6 @@ class Game {
         });
     }
 
-    playHTML5Audio(audioElement, soundName, volume) {
-        return new Promise((resolve) => {
-            try {
-                // Set volume
-                audioElement.volume = volume;
-
-                // Reset audio to beginning
-                audioElement.currentTime = 0;
-
-                // Set up ended event handler
-                const onEnded = () => {
-                    audioElement.removeEventListener('ended', onEnded);
-                    resolve();
-                };
-
-                audioElement.addEventListener('ended', onEnded);
-
-                // Handle errors
-                const onError = (e) => {
-                    audioElement.removeEventListener('error', onError);
-                    audioElement.removeEventListener('ended', onEnded);
-                    resolve();
-                };
-
-                audioElement.addEventListener('error', onError);
-
-                // Play the audio
-                const playPromise = audioElement.play();
-
-                // Handle play() promise (returns promise in modern browsers)
-                if (playPromise) {
-                    playPromise.then(() => {
-                    }).catch(error => {
-                        audioElement.removeEventListener('ended', onEnded);
-                        audioElement.removeEventListener('error', onError);
-                        resolve();
-                    });
-                }
-            } catch (error) {
-                resolve();
-            }
-        });
-    }
 
     async playWebAudio(soundName, volume = 0.7) {
         // Check if AudioContext is suspended and resume it
