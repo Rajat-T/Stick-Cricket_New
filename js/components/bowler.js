@@ -20,13 +20,15 @@ class Bowler extends Character {
             if (this.y >= this.targetY) {
                 this.y = this.targetY;
                 this.animState = 'deliver';
-                if (this.onRelease) {
-                    this.onRelease();
-                    this.onRelease = null; // Ensure it only fires once
-                }
+                // Ball release is now deferred to the correct point in the arm animation
             }
         } else if (this.animState === 'deliver') {
             this.armAngle += dt * 10;
+            // Release the ball when the arm reaches the natural overhead release point
+            if (this.onRelease && this.armAngle >= Math.PI * 0.55) {
+                this.onRelease();
+                this.onRelease = null; // Ensure it only fires once
+            }
             if (this.armAngle > Math.PI) {
                 this.animState = 'idle';
             }
