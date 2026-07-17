@@ -325,8 +325,6 @@ class Game {
         this.scoreboard.style.display = 'block';
         this.overTracker.style.display = 'block';
         this.scorecardBtn.style.display = 'block';
-        this.scorecardBtn.style.top = '190px';
-        this.scorecardBtn.style.right = '20px';
         this.timingMeter.style.display = 'block';
         this.wicketsTaken = 0;
         this.celebrationInProgress = false; // Reset celebration state
@@ -362,7 +360,32 @@ class Game {
         this.sixes = 0;
         this.currentOver = [];
         this.updateOverTracker();
+        
+        // Initialize opening batsmen stats immediately
         this.batsmanStats = [];
+        if (this.userTeam && this.userTeam.players && this.userTeam.players.length > 0) {
+            this.batsmanStats.push({
+                name: this.userTeam.players[0].name,
+                runs: 0,
+                balls: 0,
+                fours: 0,
+                sixes: 0,
+                howOut: null,
+                bowler: null
+            });
+            if (this.userTeam.players.length > 1) {
+                this.batsmanStats.push({
+                    name: this.userTeam.players[1].name,
+                    runs: 0,
+                    balls: 0,
+                    fours: 0,
+                    sixes: 0,
+                    howOut: null,
+                    bowler: null
+                });
+            }
+        }
+
         this.bowlerStats = [];
         this.previousOverBowler = null; // Track who bowled the previous over
         this.milestonesReached = []; // Track milestones to avoid duplicate celebrations
@@ -520,11 +543,27 @@ class Game {
         // Clear batsmen list
         this.batsmenListEl.innerHTML = '';
 
-        // Display current batsmen (up to two) in "Name - Runs(Balls)" format
-        activeBatsmen.slice(-2).forEach(batsman => {
+        // The first active batsman is the striker facing the delivery.
+        const striker = activeBatsmen[0];
+
+        // Display current batsmen (up to two) with detailed styles
+        activeBatsmen.slice(0, 2).forEach(batsman => {
+            const isStriker = (batsman === striker);
             const batsmanItem = document.createElement('div');
-            batsmanItem.className = 'batsman-item';
-            batsmanItem.textContent = `${batsman.name} - ${batsman.runs}(${batsman.balls})`;
+            batsmanItem.className = `batsman-item ${isStriker ? 'striker' : 'non-striker'}`;
+
+            // Create name element
+            const nameEl = document.createElement('span');
+            nameEl.className = 'batsman-name';
+            nameEl.innerHTML = `${isStriker ? '<span class="strike-dot"></span>' : ''}${batsman.name}`;
+
+            // Create runs/balls element
+            const runsEl = document.createElement('span');
+            runsEl.className = 'batsman-runs';
+            runsEl.innerHTML = `<strong class="runs-highlight">${batsman.runs}</strong> <span class="balls-count">(${batsman.balls})</span>`;
+
+            batsmanItem.appendChild(nameEl);
+            batsmanItem.appendChild(runsEl);
             this.batsmenListEl.appendChild(batsmanItem);
         });
     }
@@ -1065,6 +1104,9 @@ class Game {
 
         // 4. Update all relevant statistics for the dismissal.
         this.wicketsTaken++;
+        if (this.gameMode === 'survival') {
+            this.wicketsRemaining--;
+        }
         this.updateBatsmanStats('wicket', type, runsScoredOnWicket);
         this.recordBallOutcome('W');
         // Credit the wicket ball to the correct bowler BEFORE potential over change
@@ -1163,6 +1205,21 @@ class Game {
                 if (runsScored === 6) batsmanStatEntry.sixes += 1;
             }
             batsmanStatEntry.bowler = this.currentBowler.name;
+
+            // Immediately bring in the next batsman in the lineup as a non-striker
+            const nextBatsmanIndex = this.batsmanStats.length;
+            if (nextBatsmanIndex < this.userTeam.players.length && this.wicketsTaken < 10) {
+                const nextBatsmanName = this.userTeam.players[nextBatsmanIndex].name;
+                this.batsmanStats.push({
+                    name: nextBatsmanName,
+                    runs: 0,
+                    balls: 0,
+                    fours: 0,
+                    sixes: 0,
+                    howOut: null,
+                    bowler: null
+                });
+            }
         }
 
         // Update batsmen display after stats change
@@ -1201,13 +1258,18 @@ class Game {
                 ballEl.classList.add('boundary');
             } else if (outcome === '6') {
                 ballEl.classList.add('six');
+            } else if (outcome === '0' || outcome === 0) {
+                ballEl.classList.add('dot-ball');
+                ballEl.textContent = '•'; // Render dot balls as bullet points for sleeker look
+            } else {
+                ballEl.classList.add('runs-scored');
             }
             this.overBallsContainer.appendChild(ballEl);
         });
         const remaining = 6 - this.currentOver.length;
         for (let i = 0; i < remaining; i++) {
             const placeholder = document.createElement('div');
-            placeholder.className = 'ball-outcome';
+            placeholder.className = 'ball-outcome placeholder';
             placeholder.textContent = '•';
             this.overBallsContainer.appendChild(placeholder);
         }
