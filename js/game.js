@@ -565,6 +565,44 @@ class Game {
         });
     }
 
+    /**
+     * Rotates the strike by swapping the two active (not-out) batsmen's positions
+     * in the batsmanStats array. Since all code treats the first active batsman
+     * as the striker, this swap effectively changes who faces the next ball.
+     */
+    rotateStrike() {
+        const activeIndices = [];
+        for (let i = 0; i < this.batsmanStats.length; i++) {
+            if (this.batsmanStats[i].howOut === null || this.batsmanStats[i].howOut === undefined) {
+                activeIndices.push(i);
+            }
+            if (activeIndices.length === 2) break;
+        }
+
+        // Only swap if we have exactly 2 active batsmen
+        if (activeIndices.length === 2) {
+            const temp = this.batsmanStats[activeIndices[0]];
+            this.batsmanStats[activeIndices[0]] = this.batsmanStats[activeIndices[1]];
+            this.batsmanStats[activeIndices[1]] = temp;
+            this.updateBatsmenInfo();
+        }
+    }
+
+    /**
+     * Handles strike rotation based on runs scored.
+     * Called BEFORE incrementBall() so that end-of-over rotation in incrementBall()
+     * composes correctly:
+     * - Mid-over odd run: rotated here, no over-end rotation → net: rotated ✓
+     * - Last ball odd run: rotated here, then rotated back by over-end → net: no rotation ✓
+     * - Last ball even run: not rotated here, rotated by over-end → net: rotated ✓
+     * - Mid-over even run: not rotated by anything → net: no rotation ✓
+     */
+    handleStrikeRotation(runs) {
+        if (runs > 0 && runs % 2 !== 0) {
+            this.rotateStrike();
+        }
+    }
+
     updateBowlerStats(runs = 0, isWicket = false) {
         // Only update stats for the current bowler who is actually bowling this ball
         if (!this.currentBowler) {
@@ -935,6 +973,9 @@ class Game {
                         // Update batsman stats with the actual runs scored
                         this.updateBatsmanStats('runs', actualRunsScored);
 
+                        // Rotate strike based on completed runs before the run-out
+                        this.handleStrikeRotation(actualRunsScored);
+
                         this.handleWicket('Run Out!', actualRunsScored); // Batsman completes actual runs before being run out
                         return;
                     }
@@ -962,6 +1003,8 @@ class Game {
             if (result.runs === 4) this.fours++;
             if (result.runs === 6) this.sixes++;
             this.recordBallOutcome(result.runs);
+            // Rotate strike BEFORE incrementBall so end-of-over rotation composes correctly
+            this.handleStrikeRotation(actualRunsScored);
             this.incrementBall();
             this.updateScoreboard();
             if (this.gameMode === 'challenge' && this.score >= this.targetRuns) {
@@ -1229,6 +1272,9 @@ class Game {
             this.showFeedback(`Over complete – last ball: ${lastBall}`, '#FFD700');
             this.currentOver = [];
             this.updateOverTracker();
+
+            // End-of-over strike rotation: non-striker becomes striker
+            this.rotateStrike();
 
             // Set the previous over bowler BEFORE selecting new bowler
             if (this.currentBowler) {
