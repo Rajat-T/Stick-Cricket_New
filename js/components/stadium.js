@@ -7,6 +7,8 @@ class Stadium {
         this.isNightGame = isNightGame;
     }
     draw() {
+        this.w = this.ctx.canvas.width;
+        this.h = this.ctx.canvas.height;
         const W = this.w;
         const H = this.h;
 

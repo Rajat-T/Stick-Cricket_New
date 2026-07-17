@@ -11,10 +11,8 @@ class Game {
             this.particles = [];
             this.crowd = [];
             this.initCrowd();
-            this.soundBuffers = {};
 
             // Initialize audio system with error handling
-            this.setupAudioContext();
             this.loadSoundFiles();
         } catch (error) {
             // Fallback: create dummy audio system so game doesn't break
@@ -22,7 +20,6 @@ class Game {
             this.particles = [];
             this.crowd = [];
             this.initCrowd();
-            this.soundBuffers = {};
         }
         this.initUI();
         this.initInput();
@@ -591,11 +588,6 @@ class Game {
         bowlerStat.runs += runs;
         bowlerStat.balls++;
         if (isWicket) bowlerStat.wickets++;
-
-        // Log bowling stats for verification
-        const bowlerOvers = Math.floor(bowlerStat.balls / 6);
-        const bowlerBallsInOver = bowlerStat.balls % 6;
-
 
     }
     showScorecard() {
@@ -2308,12 +2300,6 @@ class Game {
         oscillator.stop(this.audioContext.currentTime + 1);
     }
 
-    setupAudioContext() {
-        if (!this.audioContext) {
-            return;
-        }
-    }
-
     setupAudioContextHandlers() {
         // Resume AudioContext on user interaction (required by browsers)
         const resumeAudioContext = () => {
@@ -2341,35 +2327,19 @@ class Game {
         if (!this.audioContext) {
             return;
         }
-        // Initialize HTML5 Audio elements as fallback
+        // Initialize HTML5 Audio elements
         try {
             this.sixAudio = new Audio('Music/Six_hit.mp3');
             this.wicketAudio = new Audio('Music/Wicket_fallen.mp3');
 
-            // Set up audio element event handlers
+            // Set up audio elements
             this.setupAudioElements();
-
-            // Also try Web Audio API for better control
-            this.loadWebAudioFiles();
         } catch (error) {
             // Don't break the game if audio loading fails
         }
     }
 
     setupAudioElements() {
-        // Set up HTML5 Audio elements
-        this.sixAudio.addEventListener('canplaythrough', () => {
-        });
-
-        this.sixAudio.addEventListener('error', (e) => {
-        });
-
-        this.wicketAudio.addEventListener('canplaythrough', () => {
-        });
-
-        this.wicketAudio.addEventListener('error', (e) => {
-        });
-
         // Preload the audio files
         this.sixAudio.preload = 'auto';
         this.wicketAudio.preload = 'auto';
@@ -2377,40 +2347,6 @@ class Game {
         // Set volume
         this.sixAudio.volume = 0.8;
         this.wicketAudio.volume = 0.7;
-    }
-
-    loadWebAudioFiles() {
-        // Try Web Audio API as primary method
-        const sixPaths = [
-            'Music/Six_hit.mp3',
-            './Music/Six_hit.mp3',
-            '/Music/Six_hit.mp3'
-        ];
-
-        const wicketPaths = [
-            'Music/Wicket_fallen.mp3',
-            './Music/Wicket_fallen.mp3',
-            '/Music/Wicket_fallen.mp3'
-        ];
-
-        this.loadSoundWithFallback('six_hit', sixPaths);
-        this.loadSoundWithFallback('wicket_fallen', wicketPaths);
-    }
-
-    loadSoundFile(name, url) {
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.arrayBuffer();
-            })
-            .then(arrayBuffer => this.audioContext.decodeAudioData(arrayBuffer))
-            .then(audioBuffer => {
-                this.soundBuffers[name] = audioBuffer;
-            })
-            .catch(error => {
-            });
     }
 
     async playSoundFile(soundName, volume = 0.7) {
@@ -2461,39 +2397,6 @@ class Game {
                         resolve();
                     });
                 }
-            } catch (error) {
-                resolve();
-            }
-        });
-    }
-
-
-    async playWebAudio(soundName, volume = 0.7) {
-        // Check if AudioContext is suspended and resume it
-        if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
-        }
-
-        if (!this.soundBuffers[soundName]) {
-            return Promise.resolve();
-        }
-
-        return new Promise((resolve) => {
-            try {
-                const source = this.audioContext.createBufferSource();
-                const gainNode = this.audioContext.createGain();
-
-                source.buffer = this.soundBuffers[soundName];
-                gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
-
-                source.connect(gainNode);
-                gainNode.connect(this.audioContext.destination);
-
-                source.onended = () => {
-                    resolve();
-                };
-
-                source.start();
             } catch (error) {
                 resolve();
             }

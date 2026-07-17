@@ -24,7 +24,6 @@ class Ball {
 
         // Enhanced physics parameters for realism
         this.surpriseDelivery = false;
-        this.actualBowlerType = null;
         this.edgeRisk = 0;
         this.lbwRisk = 0;
         this.spinRate = 0;
@@ -53,7 +52,6 @@ class Ball {
         this.swingSign = 1;
         this.trail = [];
         this.surpriseDelivery = false;
-        this.actualBowlerType = null;
         this.edgeRisk = 0;
         this.lbwRisk = 0;
         this.spinRate = 0;
@@ -72,7 +70,6 @@ class Ball {
     bowl(type, side, bowlerType = null, bowlingStyle = null) {
         this.reset();
         this.isActive = true;
-        this.actualBowlerType = bowlerType;
         this.bowlingStyle = bowlingStyle;
 
         // Determine if this is a surprise delivery based on bowler type and difficulty
