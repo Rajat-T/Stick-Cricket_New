@@ -67,7 +67,7 @@ class Ball {
         this.trajectoryDurationMs = 0;
         this.trajectoryTTL = 1800;
     }
-    bowl(type, side, bowlerType = null, bowlingStyle = null) {
+    bowl(type, side, bowlingStyle = null) {
         this.reset();
         this.isActive = true;
         this.bowlingStyle = bowlingStyle;

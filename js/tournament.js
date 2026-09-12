@@ -58,7 +58,6 @@ class TournamentManager {
         const shuffledTeams = this.shuffleArray(teams);
         
         // Ensure user team is placed randomly in either group
-        const userTeamIndex = shuffledTeams.findIndex(t => t.id === this.userTeam.id);
         const userInGroupA = Math.random() < 0.5;
         
         if (userInGroupA) {

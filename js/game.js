@@ -472,7 +472,6 @@ class Game {
             // RULE 1: No consecutive overs - exclude previous over's bowler
             // Only apply this rule when we have a previous over bowler (not at game start)
             if (this.previousOverBowler && this.balls > 0) {
-                const beforeFilter = availableBowlers.length;
                 availableBowlers = availableBowlers.filter(b => b.name !== this.previousOverBowler.name);
 
                 // If we've filtered out all bowlers, we need to allow the previous bowler to continue
@@ -1368,8 +1367,8 @@ class Game {
             ballType = ballTypes[Math.floor(Math.random() * ballTypes.length)];
             const side = Math.random() > 0.5 ? 'off' : 'leg';
 
-            // Pass bowler type and bowling style information to ball
-            this.ball.bowl(ballType, side, this.currentBowler?.role, this.currentBowler?.bowlingStyle);
+            // Pass bowling style information to ball
+            this.ball.bowl(ballType, side, this.currentBowler?.bowlingStyle);
 
             // Reset the flag shortly after the ball is bowled
             setTimeout(() => {
@@ -1972,7 +1971,6 @@ class Game {
             // Refresh tournament data after progress check
             const updatedTournamentData = this.tournamentManager.getTournamentData();
             const updatedHasNextMatch = updatedTournamentData.currentMatch !== null;
-            const canStillQualify = updatedHasNextMatch ? false : this.tournamentManager.canUserStillQualify();
 
             // Use updated data
             if (updatedHasNextMatch) {
